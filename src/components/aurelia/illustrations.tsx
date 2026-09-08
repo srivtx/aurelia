@@ -437,3 +437,53 @@ export const SparkleRing = (props: P) => (
     <path d="M24 13c1.3 5.5 3.5 7.7 9 9-5.5 1.3-7.7 3.5-9 9-1.3-5.5-3.5-7.7-9-9 5.5-1.3 7.7-3.5 9-9Z" fill="currentColor" />
   </svg>
 );
+
+/* ---------- AI stylist: girl + phone + chat bubbles ---------- */
+
+export const StylistIllustration = (props: P) => (
+  <svg viewBox="0 0 200 170" fill="none" {...props}>
+    <path
+      d="M160 24c11 15 14 36 8 54-6 19-20 36-39 43-18 7-39 6-53-3-14-9-20-29-16-48 4-20 19-37 39-44 20-7 62-13 61-2Z"
+      fill="var(--rose-soft, #F6DDE3)"
+      opacity="0.5"
+    />
+    {/* girl: hair back */}
+    <path
+      d="M62 108c-6-8-9-18-8-28 2-20 18-34 39-34 18 0 33 11 37 28 3 12 0 26-8 34l-2-36c-14 6-30 6-43 0-6-3-10-2-11 4l-4 32Z"
+      fill="var(--ink-2, #5A4E46)"
+      opacity="0.9"
+    />
+    {/* face */}
+    <circle cx="88" cy="76" r="22" fill="var(--surface, #FFF)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" />
+    <path d="M66 70c1-12 10-21 22-21 10 0 18 6 21 15" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" fill="none" />
+    {/* eyes + smile */}
+    <circle cx="81" cy="76" r="2" fill="var(--ink-2, #5A4E46)" />
+    <circle cx="95" cy="76" r="2" fill="var(--ink-2, #5A4E46)" />
+    <path d="M82 85c3 2.6 7 2.6 10 0" stroke="var(--ink-2, #5A4E46)" strokeWidth="1.8" strokeLinecap="round" />
+    {/* blush */}
+    <circle cx="74" cy="82" r="3.4" fill="var(--rose-soft, #F6DDE3)" />
+    <circle cx="100" cy="82" r="3.4" fill="var(--rose-soft, #F6DDE3)" />
+    {/* phone in hand */}
+    <rect x="112" y="86" width="30" height="44" rx="7" fill="var(--surface, #FFF)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" />
+    <rect x="117" y="93" width="20" height="26" rx="4" fill="var(--terra-soft, #F7E9E0)" />
+    <path d="M121 99h12M121 105h12M121 111h8" stroke="var(--ink-2, #5A4E46)" strokeWidth="1.4" strokeLinecap="round" opacity="0.55" />
+    {/* hand */}
+    <path d="M112 108c-6 1-10 5-10 11 0 5 4 9 10 9" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" fill="var(--surface, #FFF)" strokeLinejoin="round" />
+    {/* shoulders */}
+    <path d="M58 152c4-16 16-24 30-24 12 0 22 6 27 18" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" fill="none" opacity="0.8" />
+    {/* chat bubble with sparkle */}
+    <path
+      d="M138 46c0-7 6-12 13-12h16c7 0 12 5 12 12v10c0 7-5 12-12 12h-10l-7 8v-8c-7-1-12-6-12-12V46Z"
+      fill="var(--surface, #FFF)"
+      stroke="var(--ink-2, #5A4E46)"
+      strokeWidth="2.2"
+    />
+    <path d="M155 46c.9 3.6 2.3 5 6 5.9-3.7.9-5.1 2.3-6 5.9-.9-3.6-2.3-5-6-5.9 3.7-.9 5.1-2.3 6-5.9Z" fill="var(--primary, #A84A62)" />
+    <circle cx="143" cy="52" r="1.8" fill="var(--ink-2, #5A4E46)" opacity="0.5" />
+    <circle cx="167" cy="52" r="1.8" fill="var(--ink-2, #5A4E46)" opacity="0.5" />
+    {/* floating sparkles */}
+    <path d="M46 44c.8 3.2 2 4.4 5 5.2-3 .8-4.2 2-5 5.2-.8-3.2-2-4.4-5-5.2 3-.8 4.2-2 5-5.2Z" fill="var(--accent, #D9A441)" opacity="0.85" />
+    <path d="M170 100c.6 2.4 1.5 3.3 3.7 3.9-2.2.6-3.1 1.5-3.7 3.9-.6-2.4-1.5-3.3-3.7-3.9 2.2-.6 3.1-1.5 3.7-3.9Z" fill="var(--primary, #A84A62)" opacity="0.7" />
+  </svg>
+);
+

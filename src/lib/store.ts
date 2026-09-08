@@ -36,6 +36,11 @@ export interface RoutineChecks {
   pm: number[];
 }
 
+export interface SeasonResult {
+  id: string; // season id, e.g. "true-autumn"
+  taken: string; // local YYYY-MM-DD
+}
+
 export interface FocusTarget {
   category: Category;
   id: string; // deep-open target, e.g. "color-navy", "look-party"
@@ -45,6 +50,7 @@ interface AureliaState {
   tab: TabId;
   saved: SavedItem[];
   skinResult: { base: string; sensitiveOverlay: boolean } | null;
+  seasonResult: SeasonResult | null;
   profile: Profile | null;
   streak: StreakState | null;
   routine: RoutineChecks;
@@ -54,12 +60,15 @@ interface AureliaState {
   toggleSaved: (item: SavedItem) => void;
   isSaved: (id: string) => boolean;
   setSkinResult: (r: { base: string; sensitiveOverlay: boolean } | null) => void;
+  setSeasonResult: (r: SeasonResult | null) => void;
   setProfile: (p: Profile | null) => void;
   touchStreak: () => void;
   toggleRoutine: (slot: "am" | "pm", step: number) => void;
   setFocus: (f: FocusTarget | null) => void;
   showToast: (msg: string, actionLabel?: string, action?: () => void) => void;
   hideToast: () => void;
+  stylistOpen: boolean;
+  setStylistOpen: (b: boolean) => void;
 }
 
 /* local YYYY-MM-DD (never called during render — actions/effects only) */
@@ -82,11 +91,13 @@ export const useAurelia = create<AureliaState>()(
       tab: "home",
       saved: [],
       skinResult: null,
+      seasonResult: null,
       profile: null,
       streak: null,
       routine: { date: "", am: [], pm: [] },
       focus: null,
       toast: null,
+      stylistOpen: false,
       setTab: (tab) => set({ tab }),
       toggleSaved: (item) =>
         set((state) => ({
@@ -96,6 +107,7 @@ export const useAurelia = create<AureliaState>()(
         })),
       isSaved: (id) => get().saved.some((s) => s.id === id),
       setSkinResult: (r) => set({ skinResult: r }),
+      setSeasonResult: (r) => set({ seasonResult: r }),
       setProfile: (p) => set({ profile: p }),
       touchStreak: () => {
         const today = localDay();
@@ -119,6 +131,7 @@ export const useAurelia = create<AureliaState>()(
         });
       },
       setFocus: (f) => set({ focus: f }),
+      setStylistOpen: (b) => set({ stylistOpen: b }),
       showToast: (msg, actionLabel, action) => {
         if (toastTimer) clearTimeout(toastTimer);
         set({ toast: { msg, actionLabel, action } });
@@ -137,6 +150,7 @@ export const useAurelia = create<AureliaState>()(
       partialize: (state) => ({
         saved: state.saved,
         skinResult: state.skinResult,
+        seasonResult: state.seasonResult,
         profile: state.profile,
         streak: state.streak,
         routine: state.routine,

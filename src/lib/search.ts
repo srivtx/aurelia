@@ -121,6 +121,14 @@ export function searchIndex(): SearchEntry[] {
     e.push({ id: `tip-${t.id}`, category: t.category, title: t.title, body: `${t.title} ${t.body}`, snippet: t.body.slice(0, 90), kind: "Tip" });
   }
 
+  /* deep-tech tools */
+  e.push({ id: "lab-season", category: "colors", title: "12-Season Color Analysis", body: "personal color analysis season quiz palette vector classifier warm cool muted bright deep light spring summer autumn winter metals jewelry", snippet: "7 questions → your season, palette & metals", kind: "Tool" });
+  e.push({ id: "lab-outfit", category: "colors", title: "Outfit Lab", body: "score outfit combination colors hue complementary analogous triadic value contrast chroma warmth 60-30-10 engine lab", snippet: "Score any 2-4 colors with real color math", kind: "Tool" });
+  e.push({ id: "lab-photo", category: "colors", title: "Photo → Palette", body: "photo palette extract k-means camera outfit image colors dominant on-device computer vision private offline", snippet: "Pull colors from a photo, fully on-device", kind: "Tool" });
+  e.push({ id: "lab-ingredients", category: "skin", title: "Ingredient Lab — Mix & Match", body: "mix match ingredients actives conflict retinol vitamin c niacinamide aha bha salicylic glycolic azelaic benzoyl peroxide layering order routine am pm sequencer", snippet: "Check conflicts + get the right AM/PM order", kind: "Tool" });
+  e.push({ id: "face-meter", category: "hair", title: "Face Meter", body: "measure face shape geometry calculator oval round square heart long diamond ratio classifier jaw forehead cheekbone hairstyle", snippet: "Slide 4 measurements → your shape + styles", kind: "Tool" });
+  e.push({ id: "ask-aurelia", category: "colors", title: "Ask Aurelia — AI stylist", body: "ai stylist chat ask assistant beauty editor conversation colors makeup skin hair questions advice", snippet: "Your AI stylist, personalized", kind: "Tool" });
+
   cached = e;
   return e;
 }
@@ -156,4 +164,4 @@ export function search(query: string, limit = 24): SearchHit[] {
 }
 
 /* Popular searches shown on the empty state */
-export const popularSearches = ["oily skin", "date night", "camel", "concealer", "frizz", "blush", "SPF", "braid"];
+export const popularSearches = ["my season", "outfit lab", "retinol", "oily skin", "date night", "face meter", "camel", "concealer", "blush", "SPF"];

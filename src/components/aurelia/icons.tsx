@@ -273,6 +273,55 @@ export const BeachIcon = (props: P) => (
   </svg>
 );
 
+/* ---------- Deep-tech feature icons ---------- */
+
+export const FlaskIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M9.5 3.5v4.6L4.8 16.6A2.4 2.4 0 0 0 6.9 20.2h10.2a2.4 2.4 0 0 0 2.1-3.6L14.5 8.1V3.5" />
+    <path d="M8.5 3.5h7" />
+    <path d="M7.4 14.5c1.6-1 3.1-1 4.6 0 1.5 1 3 1 4.6 0" opacity="0.7" />
+    <circle cx="10" cy="17" r="0.5" fill="currentColor" stroke="none" />
+    <circle cx="13.2" cy="18" r="0.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const CameraIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M4.5 8.2A2.2 2.2 0 0 1 6.7 6h1.2l1.2-1.8h5.8L16.1 6h1.2a2.2 2.2 0 0 1 2.2 2.2v9a2.2 2.2 0 0 1-2.2 2.2H6.7a2.2 2.2 0 0 1-2.2-2.2v-9Z" />
+    <circle cx="12" cy="13" r="4" />
+    <circle cx="12" cy="13" r="1.2" fill="currentColor" stroke="none" opacity="0.5" />
+  </svg>
+);
+
+export const ChatIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M20 12.4c0 4-3.6 7.2-8 7.2-.9 0-1.8-.1-2.6-.4L5 20.5l1.2-3.1A6.9 6.9 0 0 1 4 12.4c0-4 3.6-7.2 8-7.2s8 3.2 8 7.2Z" />
+    <path d="M12 9.6c.5 2 1.3 2.8 3.2 3.2-1.9.4-2.7 1.2-3.2 3.2-.5-2-1.3-2.8-3.2-3.2 1.9-.4 2.7-1.2 3.2-3.2Z" strokeWidth="1.3" />
+  </svg>
+);
+
+export const SendIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M4 11.6 20 4l-7.6 16-2-6.4L4 11.6Z" />
+    <path d="m10.4 13.6 3.8-3.6" strokeWidth="1.3" />
+  </svg>
+);
+
+export const RulerIcon = (props: P) => (
+  <svg {...base(props)}>
+    <rect x="2.8" y="8.6" width="18.4" height="6.8" rx="1.6" />
+    <path d="M6.4 8.6v2.6M9.6 8.6v4M12.8 8.6v2.6M16 8.6v4M19.2 8.6v2.6" />
+  </svg>
+);
+
+export const SwatchDropIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M12 3.2s6.5 6.6 6.5 11a6.5 6.5 0 1 1-13 0c0-4.4 6.5-11 6.5-11Z" />
+    <path d="M12 20.5c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.9-4 2.6-4.8" strokeWidth="1.3" />
+  </svg>
+);
+
+
 export const outfitIcons: Record<string, (props: P) => React.ReactElement> = {
   casual: TeeIcon,
   college: BackpackIcon,

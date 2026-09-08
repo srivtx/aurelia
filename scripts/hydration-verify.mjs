@@ -66,8 +66,10 @@ console.log(`\nPersonalized greeting (name "Maya"): ${personalized ? 'YES ✓' :
 const streakChip = await page.locator('text=/\\d+-day glow streak/').count();
 console.log(`Streak chip visible: ${streakChip > 0 ? 'YES ✓' : 'NO ✗'}`);
 
-// verify "For you" section (profile skinType=oily, vibe=soft)
-const forYou = await page.locator('text=/Oily skin routine/').count();
+// verify "For you" section (profile skinType=oily, vibe=soft; seed skinResult takes priority)
+const forYou =
+  (await page.locator('text=/Combination skin routine/').count()) > 0 ||
+  (await page.locator('text=/Oily skin routine/').count()) > 0;
 console.log(`"For you" skin routine card: ${forYou > 0 ? 'YES ✓' : 'NO ✗'}`);
 
 // verify saved badge count

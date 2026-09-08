@@ -22,9 +22,12 @@ import {
 } from "@/data/colors";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, DotList, StepRow } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
-import { LightbulbIcon, AlertIcon, ArrowRightIcon, ShareIcon } from "./../icons";
+import { LightbulbIcon, AlertIcon, ArrowRightIcon, ShareIcon, FlaskIcon, CameraIcon, SwatchDropIcon } from "./../icons";
 import { useAurelia } from "@/lib/store";
 import { shareText } from "@/lib/share";
+import { SeasonAnalysis, SeasonBadge } from "../season-analysis";
+import { OutfitLab } from "../outfit-lab";
+import { PhotoAnalyzer } from "../photo-analyzer";
 
 const ACCENT = "var(--cat-colors)";
 
@@ -244,11 +247,12 @@ function UndertoneFinder({ onClose }: { onClose: () => void }) {
 export function ColorsTab() {
   const { focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
-  const [sheetBody, setSheetBody] = useState<"color" | "palette" | "undertone" | "theory">("color");
+  const [sheetBody, setSheetBody] = useState<"color" | "palette" | "undertone" | "theory" | "season" | "lab" | "photo">("color");
   const [activeColor, setActiveColor] = useState<WardrobeColor | null>(null);
   const [activePalette, setActivePalette] = useState<Palette | null>(null);
   const [activeTheory, setActiveTheory] = useState<(typeof theorySchemes)[0] | null>(null);
   const [undertoneOpen, setUndertoneOpen] = useState(false);
+  const [labSeed, setLabSeed] = useState<string[]>([]);
 
   const openColor = (c: WardrobeColor) => {
     setActiveColor(c);
@@ -260,13 +264,33 @@ export function ColorsTab() {
     setSheetBody("palette");
     setSheet({ id: `palette-${p.id}`, category: "colors", eyebrow: "Outfit palette", title: p.name, subtitle: p.occasion, accent: ACCENT });
   };
+  const openSeason = () => {
+    setSheetBody("season");
+    setSheet({ id: "season-analysis", category: "colors", eyebrow: "Personal color analysis", title: "Find your season", subtitle: "12 seasons · 7 questions", accent: ACCENT });
+  };
+  const openLab = (seed: string[] = []) => {
+    setLabSeed(seed);
+    setSheetBody("lab");
+    setSheet({ id: "outfit-lab", category: "colors", eyebrow: "Outfit Lab", title: "Score a combination", subtitle: "CIELCh color math · offline", accent: ACCENT });
+  };
+  const openPhoto = () => {
+    setSheetBody("photo");
+    setSheet({ id: "photo-analyzer", category: "colors", eyebrow: "Photo → Palette", title: "Extract a palette", subtitle: "On-device k-means · private", accent: ACCENT });
+  };
 
-  /* deep-open from global search (e.g. "navy", "capsule neutrals") */
+  /* deep-open from global search (e.g. "navy", "capsule neutrals", "color lab") */
   useEffect(() => {
     if (focus?.category !== "colors") return;
     const id = focus.id;
     const t = setTimeout(() => {
-      setFocus(null);      if (id.startsWith("color-")) {
+      setFocus(null);
+      if (id === "lab-season") {
+        openSeason();
+      } else if (id === "lab-outfit") {
+        openLab();
+      } else if (id === "lab-photo") {
+        openPhoto();
+      } else if (id.startsWith("color-")) {
         const c = colorById(id.replace("color-", ""));
         if (c) openColor(c);
       } else if (id.startsWith("palette-")) {
@@ -290,7 +314,49 @@ export function ColorsTab() {
         <p className="text-[14px] leading-[21px] text-ink-2">Tap a color to see its best friends — and the frenemies.</p>
       </ScreenTitle>
 
+      {/* ── The Color Lab — real color science, on-device ── */}
       <section className="mt-5">
+        <SectionHeader eyebrow="The Color Lab" title="Lab-grade tools" accent={ACCENT} />
+        <div className="grid grid-cols-1 gap-3">
+          <button
+            onClick={openSeason}
+            aria-label="Open the 12-season personal color analysis"
+            className="text-left rounded-[16px] border border-line bg-[linear-gradient(135deg,var(--terra-soft),var(--surface))] p-4 press outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+          >
+            <div className="flex items-center gap-3.5">
+              <span className="grid place-items-center w-11 h-11 rounded-[14px] bg-surface text-cat-colors shrink-0" style={{ color: "var(--cat-colors)", background: "var(--surface)" }}>
+                <SwatchDropIcon width={22} height={22} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold text-ink leading-tight">12-Season Color Analysis</p>
+                <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">7 questions → your season, palette & metals — vector-space classifier</p>
+              </div>
+              <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+            </div>
+          </button>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Card onClick={() => openLab()} ariaLabel="Open the Outfit Lab" className="p-4">
+              <span className="grid place-items-center w-10 h-10 rounded-[12px] bg-terra-soft shrink-0" style={{ background: "var(--terra-soft)", color: "var(--cat-colors)" }}>
+                <FlaskIcon width={20} height={20} />
+              </span>
+              <p className="text-[14.5px] font-bold text-ink mt-3 leading-tight">Outfit Lab</p>
+              <p className="text-[11.5px] leading-[15px] text-ink-3 mt-1">Score any 2–4 colors with real color math</p>
+            </Card>
+            <Card onClick={openPhoto} ariaLabel="Open the photo palette analyzer" className="p-4">
+              <span className="grid place-items-center w-10 h-10 rounded-[12px] shrink-0" style={{ background: "var(--rose-soft)", color: "var(--cat-colors)" }}>
+                <CameraIcon width={20} height={20} />
+              </span>
+              <p className="text-[14.5px] font-bold text-ink mt-3 leading-tight">Photo → Palette</p>
+              <p className="text-[11.5px] leading-[15px] text-ink-3 mt-1">Pull colors from a photo, fully on-device</p>
+            </Card>
+          </div>
+
+          <SeasonBadge onOpen={openSeason} />
+        </div>
+      </section>
+
+      <section className="mt-9">
         <SectionHeader eyebrow="The match engine" title="Pick a color" accent={ACCENT} />
         <SwatchGrid onPick={openColor} />
       </section>
@@ -429,6 +495,9 @@ export function ColorsTab() {
         {sheetBody === "color" && activeColor && <ColorDetail color={activeColor} />}
         {sheetBody === "palette" && activePalette && <PaletteDetail palette={activePalette} />}
         {sheetBody === "undertone" && <UndertoneFinder onClose={() => setSheet(null)} />}
+        {sheetBody === "season" && <SeasonAnalysis onClose={() => setSheet(null)} />}
+        {sheetBody === "lab" && <OutfitLab key={labSeed.join("-") || "empty"} seed={labSeed} />}
+        {sheetBody === "photo" && <PhotoAnalyzer onUseInLab={(hexes) => openLab(hexes)} />}
         {sheetBody === "theory" && activeTheory && (
           <div>
             <p className="text-[14px] leading-[21px] text-ink-2">{activeTheory.desc}</p>

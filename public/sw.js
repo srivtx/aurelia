@@ -1,5 +1,5 @@
 /* Aurelia service worker — app shell + offline-first content */
-const VERSION = "aurelia-v2";
+const VERSION = "aurelia-v3";
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSETS = [
   "/",

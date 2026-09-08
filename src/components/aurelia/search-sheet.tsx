@@ -33,7 +33,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { setTab, setFocus } = useAurelia();
+  const { setTab, setFocus, setStylistOpen } = useAurelia();
 
   /* debounce input */
   useEffect(() => {
@@ -108,6 +108,15 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
   }, [hits]);
 
   const go = (hit: SearchHit) => {
+    /* special: AI stylist opens the chat directly */
+    if (hit.id === "ask-aurelia") {
+      if (pushedRef.current) {
+        pushedRef.current = false;
+        onClose();
+      } else onClose();
+      setStylistOpen(true);
+      return;
+    }
     /* deep-open: tips live on home, everything else on its tab */
     setTab(hit.category === "colors" || hit.category === "makeup" || hit.category === "skin" || hit.category === "hair" ? hit.category : "home");
     setFocus({ category: hit.category, id: hit.id });

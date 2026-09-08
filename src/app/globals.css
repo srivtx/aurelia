@@ -298,6 +298,19 @@
     }
   }
 
+  /* chat typing dots */
+  @keyframes typing-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
   .press {
     transition: transform 100ms var(--ease-out);
   }

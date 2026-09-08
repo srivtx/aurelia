@@ -101,3 +101,27 @@ Stage Summary:
 - App now launch-grade: search, onboarding, routines, share, update flow, 404, a11y fixes, SEO/OG, iOS splash
 - Repo live at https://github.com/srivtx/aurelia (main), dev server running on :3000
 - Remaining backlog in docs/RESEARCH-*.md (P1/P2): 12-season color analysis, GRWM step player, saved boards, push notifications, acne-101 content, storage persistence guard, analytics
+
+---
+Task ID: 4
+Agent: main
+Task: Deep-tech layer — user feedback: prior features were "anyone can do it" level; required research-level, algorithmic features
+
+Work Log:
+- Built pure-TS Color Science Engine (src/lib/color-science.ts): sRGB↔CIE XYZ(D65)↔CIELAB/CIELCh, full CIEDE2000, WCAG luminance/contrast, warmth model, harmony generation, ΔE-based color naming — all pure + deterministic (hydration-safe)
+- Built 12-Season Personal Color Analysis (src/data/seasons.ts): 7-question diagnostic → weighted [warmth, depth, chroma, contrast] vector → nearest-archetype classifier over 12 seasons; 16-swatch palettes, metals, makeup, hair, avoid colors per season; rateColorForSeason via ΔE2000 to palette; season persisted in store
+- Built on-device Photo→Palette (src/lib/palette-extract.ts): canvas downscale → Lab pixels → k-means++ (deterministic LCG) → ΔE2000 merge; nothing uploaded
+- Built Outfit Engine (src/lib/outfit-engine.ts): hue-geometry classification, lightness spread, chroma coherence, warmth coherence, neutral anchor, season-fit factor, 60-30-10 role assignment, scored 38-97 with human explanations
+- Built Ingredient Lab (src/data/actives.ts + src/lib/routine-engine.ts): 12 actives with pH/slots/photosensitivity, conflict/synergy matrix, AM/PM sequencer (low-pH first, humectants last, SPF final), alternate-night warnings
+- Built Face Meter (src/lib/face-shape.ts + face-meter.tsx): anthropometric ratio classifier (L/C, F/C, J/C) → 6 shapes with confidence + runner-up; live-morphing parametric SVG face that redraws with sliders
+- Built AI Stylist: /api/stylist (z-ai-web-dev-sdk, server-only) with knowledge-grounded, body-positive system prompt + zero-party personalization (name/season/skin/vibe); full-screen chat UI with quick prompts, typing dots, back-button close; header chat button on all tabs; "Ask Aurelia" home card
+- Integrated: Color Lab section in Colors tab (season wizard + result + badge, outfit lab, photo analyzer w/ "open in Outfit Lab" handoff), Ingredient Lab in Skin tab, Face Meter in Hair tab, search entries + deep-opens for all tools incl. ask-aurelia → opens chat
+- Visuals: 6 new icons (flask, camera, chat, send, ruler, swatch-drop), StylistIllustration (girl+phone+chat bubble line art), typing-bounce keyframe, score ring + signal-profile bars + role-bar visualizations, morphing face SVG
+- Store: seasonResult (persisted), stylistOpen; sw.js VERSION → aurelia-v3; README rewritten with deep-tech positioning
+- Fixed along the way: face-meter ../illustrations import path, broken seasonSignals stub, duplicate JSX brace, unused imports
+
+Stage Summary:
+- E2E (scripts/e2e-deep-tech.mjs, 33 checks): ALL PASS — season wizard classifies (Dark Autumn for autumn-leaning answers), save→badge→Outfit Lab season fit factor, outfit scoring renders, photo analyzer UI, retinol×glycolic conflict detected with fix advice + AM/PM timelines, face meter classifies + morphs, AI stylist replies personalized ("For your Dark Autumn palette…")
+- Regression: e2e-new-features.mjs 25/25 PASS; hydration-verify.mjs 0 hydration errors (IST + persisted state)
+- Lint: clean; dev server GET / 200
+- Hygiene: z-ai SDK never imported client-side; photo processing never leaves device; season/date logic in event handlers only

@@ -16,7 +16,8 @@ import { useAurelia, type TabId, type Category } from "@/lib/store";
 import { shareCard, shareText } from "@/lib/share";
 import { Card, Chip, Eyebrow, SectionHeader, SaveButton } from "./../bits";
 import { HeroIllustration } from "./../illustrations";
-import { tabIcons, ArrowRightIcon, SparkleIcon, ShareIcon, FlameIcon, PencilIcon, DropletIcon, MirrorIcon } from "./../icons";
+import { tabIcons, ArrowRightIcon, SparkleIcon, ShareIcon, FlameIcon, PencilIcon, DropletIcon, MirrorIcon, ChatIcon, SwatchDropIcon } from "./../icons";
+import { seasonById } from "@/data/seasons";
 
 const categoryMeta: Record<Category, { label: string; blurb: string; accent: string; tint: string }> = {
   colors: { label: "Color Combos", blurb: "What goes with what — the match engine", accent: "var(--cat-colors)", tint: "var(--terra-soft)" },
@@ -47,7 +48,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function HomeTab() {
-  const { setTab, saved, profile, streak, skinResult, showToast, setProfile, setFocus } = useAurelia();
+  const { setTab, saved, profile, streak, skinResult, showToast, setProfile, setFocus, seasonResult, setStylistOpen } = useAurelia();
+  const season = seasonResult ? seasonById(seasonResult.id) : null;
 
   /* ---- hydration-safe greeting: server & first client render agree on
      "Hello"; the time-based greeting only lands AFTER mount. ---- */
@@ -119,6 +121,60 @@ export function HomeTab() {
           <HeroIllustration className="absolute -right-4 -bottom-2 w-[190px] h-[175px] pointer-events-none select-none" aria-hidden />
         </div>
       </section>
+
+      {/* AI stylist card */}
+      <section className="mt-6">
+        <button
+          onClick={() => setStylistOpen(true)}
+          aria-label="Open Ask Aurelia — your AI stylist"
+          className="w-full text-left rounded-[20px] border border-line overflow-hidden press outline-none focus-visible:ring-2 focus-visible:ring-rose/40 relative bg-[linear-gradient(120deg,var(--rose-soft)_0%,var(--surface)_70%)]"
+        >
+          <div className="p-5 relative z-10">
+            <div className="flex items-center gap-3.5">
+              <span className="grid place-items-center w-12 h-12 rounded-[16px] shrink-0" style={{ background: "var(--rose)", color: "white" }}>
+                <ChatIcon width={24} height={24} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[18px] text-ink leading-tight">Ask Aurelia ✦</p>
+                <p className="text-[12.5px] leading-[17px] text-ink-3 mt-1">
+                  Your AI stylist — ask anything about colors, makeup, skin or hair
+                  {season ? `. Knows your ${season.name} palette` : ""}
+                </p>
+              </div>
+              <span className="shrink-0 h-8 px-4 rounded-full bg-rose text-white text-[12px] font-bold grid place-items-center" style={{ background: "var(--rose)" }}>
+                Chat
+              </span>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      {/* For you — season first */}
+      {season && (
+        <section className="mt-6">
+          <Card
+            onClick={() => {
+              setTab("colors");
+              setFocus({ category: "colors", id: "lab-season" });
+            }}
+            ariaLabel="Open your color season palette"
+            className="p-4"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="flex -space-x-1.5 shrink-0">
+                {season.palette.slice(0, 5).map((s) => (
+                  <span key={s.hex} className="w-8 h-8 rounded-full border-2 border-surface" style={{ background: s.hex }} />
+                ))}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14.5px] font-bold text-ink leading-tight">You are {season.name}</p>
+                <p className="text-[12px] text-ink-3 mt-0.5">Your glow palette, metals & makeup awaits</p>
+              </div>
+              <SwatchDropIcon width={18} height={18} className="text-ink-3 shrink-0" />
+            </div>
+          </Card>
+        </section>
+      )}
 
       {/* Daily tip */}
       <section className="mt-6">

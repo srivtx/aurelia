@@ -9,8 +9,9 @@ import { useState, useEffect } from "react";
 import { masterStyles, outfitCategories, faceShapes, prepBasics, haircareTips, quickFixes, styleById, type HairStyle } from "@/data/hair";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, DifficultyChip, TimeChip, DotList } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
-import { outfitIcons, LightbulbIcon, ArrowRightIcon, CheckIcon } from "./../icons";
+import { outfitIcons, LightbulbIcon, ArrowRightIcon, CheckIcon, RulerIcon } from "./../icons";
 import { hairstyleMinis, faceShapeIcons, EmptySavedIllustration } from "./../illustrations";
+import { FaceMeter } from "../face-meter";
 import { useAurelia } from "@/lib/store";
 
 const ACCENT = "var(--cat-hair)";
@@ -84,17 +85,26 @@ export function HairTab() {
   const [sheet, setSheet] = useState<SheetData | null>(null);
   const [styleDetail, setStyleDetail] = useState<HairStyle | null>(null);
   const [shapeDetail, setShapeDetail] = useState<(typeof faceShapes)[0] | null>(null);
+  const [meterOpen, setMeterOpen] = useState(false);
   const [activeCat, setActiveCat] = useState<string>(outfitCategories[0].id);
 
   const openStyle = (s: HairStyle) => {
     setStyleDetail(s);
     setShapeDetail(null);
+    setMeterOpen(false);
     setSheet({ id: `style-${s.id}`, category: "hair", eyebrow: `${s.difficulty} · ${s.minutes} min`, title: s.name, subtitle: `${s.length} hair · ${s.heat ? "heat tools" : "heat-free"}`, accent: ACCENT });
   };
   const openShape = (s: (typeof faceShapes)[0]) => {
     setShapeDetail(s);
     setStyleDetail(null);
+    setMeterOpen(false);
     setSheet({ id: `shape-${s.id}`, category: "hair", eyebrow: "Face shape guide", title: `${s.name} face`, subtitle: "Flatter YOUR face", accent: ACCENT });
+  };
+  const openMeter = () => {
+    setMeterOpen(true);
+    setShapeDetail(null);
+    setStyleDetail(null);
+    setSheet({ id: "face-meter", category: "hair", eyebrow: "Face Meter", title: "Measure your face", subtitle: "Ratio classifier · live preview", accent: ACCENT });
   };
 
   /* deep-open from global search (e.g. "braid", "oval face") */
@@ -102,7 +112,10 @@ export function HairTab() {
     if (focus?.category !== "hair") return;
     const id = focus.id;
     const t = setTimeout(() => {
-      setFocus(null);      if (id.startsWith("style-")) {
+      setFocus(null);
+      if (id === "face-meter") {
+        openMeter();
+      } else if (id.startsWith("style-")) {
         const s = styleById(id.replace("style-", ""));
         if (s) openStyle(s);
       } else if (id.startsWith("face-")) {
@@ -203,6 +216,18 @@ export function HairTab() {
       {/* Face shapes */}
       <section className="mt-9">
         <SectionHeader eyebrow="Flatter YOUR face" title="Face shape guide" accent={ACCENT} />
+        <Card onClick={openMeter} ariaLabel="Open the face meter — measure your face" className="p-4 mb-3">
+          <div className="flex items-center gap-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "color-mix(in srgb, var(--cat-hair) 14%, transparent)", color: "var(--cat-hair)" }}>
+              <RulerIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-ink leading-tight">Face Meter</p>
+              <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">Slide 4 measurements → your shape + styles that fit it</p>
+            </div>
+            <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+          </div>
+        </Card>
         <div className="grid grid-cols-3 gap-3">
           {faceShapes.map((s) => {
             const Icon = faceShapeIcons[s.id];
@@ -270,6 +295,13 @@ export function HairTab() {
       <BottomSheet data={sheet} onClose={() => setSheet(null)}>
         {styleDetail && <StyleDetail style={styleDetail} />}
         {shapeDetail && <FaceShapeDetail shape={shapeDetail} />}
+        {meterOpen && (
+          <FaceMeter
+            onOpenStyle={(s) => {
+              openStyle(s);
+            }}
+          />
+        )}
       </BottomSheet>
     </div>
   );

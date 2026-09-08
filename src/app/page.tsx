@@ -19,6 +19,7 @@ import { Onboarding } from "@/components/aurelia/onboarding";
 import { Card, Chip, SaveButton } from "@/components/aurelia/bits";
 import { EmptySavedIllustration, SparkleRing } from "@/components/aurelia/illustrations";
 import { tabIcons, SparkleIcon, RefreshIcon } from "@/components/aurelia/icons";
+import { StylistChat } from "@/components/aurelia/stylist-chat";
 
 /* Lazy-load the four heavy tabs — smaller first paint */
 const ColorsTab = dynamic(() => import("@/components/aurelia/tabs/colors-tab").then((m) => m.ColorsTab), {
@@ -170,7 +171,7 @@ function Toast() {
 /* ---------- App ---------- */
 
 function AureliaApp() {
-  const { tab, profile, saved } = useAurelia();
+  const { tab, profile, saved, stylistOpen, setStylistOpen } = useAurelia();
   const [savedOpen, setSavedOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -285,6 +286,9 @@ function AureliaApp() {
       </Shell>
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* AI stylist chat — mounted once, survives tab switches */}
+      <StylistChat open={stylistOpen} onClose={() => setStylistOpen(false)} />
 
       {/* First-run onboarding — only decided after hydration, never during SSR.
          Onboarding sets the profile itself; profile != null removes it. */}

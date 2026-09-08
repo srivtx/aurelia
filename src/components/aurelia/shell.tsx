@@ -7,7 +7,7 @@
 
 import { ReactNode, useCallback, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
-import { tabIcons, SunIcon, MoonIcon, HeartIcon, SparkleIcon, SearchIcon } from "./icons";
+import { tabIcons, SunIcon, MoonIcon, HeartIcon, SparkleIcon, SearchIcon, ChatIcon } from "./icons";
 import { useAurelia, type TabId } from "@/lib/store";
 
 const tabs: { id: TabId; label: string }[] = [
@@ -48,7 +48,7 @@ export function Shell({
   savedCount: number;
 }) {
   const { dark, toggle } = useTheme();
-  const { tab, setTab } = useAurelia();
+  const { tab, setTab, setStylistOpen } = useAurelia();
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
@@ -65,6 +65,13 @@ export function Shell({
               <span className="font-display italic text-[19px] leading-none text-ink pt-0.5">Aurelia</span>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                aria-label="Ask Aurelia — AI stylist chat"
+                onClick={() => setStylistOpen(true)}
+                className="tap-target press grid place-items-center w-10 h-10 rounded-full text-ink-3 hover:text-rose hover:bg-surface-muted transition-colors"
+              >
+                <ChatIcon width={19} height={19} />
+              </button>
               <button
                 aria-label="Search tips, colors, looks"
                 onClick={onOpenSearch}
