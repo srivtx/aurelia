@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "The last piece of content, the **\"Your saved looks\"** card, is **fully visible** above the bottom tab bar with clear spacing. It is not cut off or hiding behind the tab bar.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1788875310,
+  "id": "2026090821482584bb0d346bfa452d",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026090821482584bb0d346bfa452d",
+  "usage": {
+    "completion_tokens": 43,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 445,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 488
+  }
+}

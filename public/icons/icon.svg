@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C25A76"/>
+      <stop offset="1" stop-color="#A84A62"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- main 4-point sparkle -->
+  <path d="M256 108 C266 168 288 190 348 200 C288 210 266 232 256 292 C246 232 224 210 164 200 C224 190 246 168 256 108 Z" fill="#FAF7F3"/>
+  <!-- companion sparkle -->
+  <path d="M348 268 C354 300 366 312 398 318 C366 324 354 336 348 368 C342 336 330 324 298 318 C330 312 342 300 348 268 Z" fill="#F6DDE3"/>
+  <!-- petal accent -->
+  <path d="M196 300 C201 326 213 338 239 343 C213 348 201 360 196 386 C191 360 179 348 153 343 C179 338 191 326 196 300 Z" fill="#E9B095"/>
+</svg>
