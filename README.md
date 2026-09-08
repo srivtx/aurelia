@@ -111,6 +111,7 @@ Everything a contributor needs is preserved in [`docs/`](docs/):
 - **[docs/CONTEXT.md](docs/CONTEXT.md)** — start here: full codebase map, design-token rules (including the alias pitfall), hydration guardrails, engine reference, how to add content/features.
 - **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — free-model setup (Groq/Gemini/OpenRouter/Cerebras/Mistral/local), Vercel + Docker + self-host guides, troubleshooting.
 - **[docs/RESEARCH-DEEPTECH.md](docs/RESEARCH-DEEPTECH.md)** — WebMCP spec deep-dive, free-LLM provider matrix, modern PWA APIs, ranked deep-tech roadmap.
+- **[docs/RESEARCH-NEXT-TECH.md](docs/RESEARCH-NEXT-TECH.md)** — the next layer (2026-09): live AR mirror (MediaPipe FaceLandmarker), offline stylist via Chrome built-in AI, OCR ingredient scanner, WebGPU/OKLCh color lab, bandit + spaced-repetition personalization, on-device VLM.
 - **[docs/RESEARCH-PWA-LAUNCH.md](docs/RESEARCH-PWA-LAUNCH.md)** — PWA launch checklist and benchmarks.
 - **[docs/RESEARCH-BEAUTY-APP-UX.md](docs/RESEARCH-BEAUTY-APP-UX.md)** — competitor benchmark and feature-gap analysis.
 - `worklog.md` — append-only build log of every task and verification run.

@@ -192,3 +192,19 @@ Stage Summary:
 - hydration-verify: 0 errors; e2e-deep-tech: all pass incl. stylist reply
 - check-providers.mjs: resolves zai (no keys in env) — works
 - User-facing design: end users never see which AI provider serves them; operators configure via env (docs/DEPLOYMENT.md)
+
+---
+Task ID: 4
+Agent: main
+Task: Research next deep-tech layer ("what else cool tech can we do")
+
+Work Log:
+- 11 live web searches (Chrome built-in AI, MediaPipe FaceLandmarker, transformers.js/WebGPU, WebGPU+OKLCh, OCR, WebNN, 2026 platform APIs, Web Speech, SmolVLM, sqlite-wasm/OPFS, AR try-on competitors) + primary-source fetches (developer.chrome.com/docs/ai/prompt-api updated 2026-08-26; Google AI Edge FaceLandmarker guide; W3C CSS Color 4 Sept 2026)
+- Key verified facts: Prompt API shipped Chrome 138 (samplingMode origin trial Chrome 148; LanguageModel.availability/promptStreaming; Mozilla opposes → progressive enhancement only); FaceLandmarker = 478 3D landmarks + 52 blendshapes, wasm web task; transformers.js 10M downloads, WebGPU LLMs ≤8B; SmolVLM-2B browser-runnable; CSS Color 4 (Sept 2026) OKLCh gamut mapping; WebNN still Chromium/flag-only (rejected for direct use); sqlite-wasm OPFS official; Web Install API navigator.install() + <install> element in Chromium 145+; competitor AR try-on exists (Maybelline/L'Oréal/NYX vendor SDKs, makeupcheckai) but none couple to season/color science
+- Wrote docs/RESEARCH-NEXT-TECH.md: 10 ranked directions w/ impact/feasibility/effort, each with verified 2026 status, concrete Aurelia integration sketch (3-tier offline cascade code, lip-hull AR approach, OCR INCI pipeline, WGSL ΔE2000 heatmap, Thompson-sampling + SM-2 designs, device-tier gating), rejected list (WebNN, federated, emotion/gaze), 5-phase build order
+- README docs index updated to link the new research doc
+
+Stage Summary:
+- Deliverable: docs/RESEARCH-NEXT-TECH.md (research only, no app code changed)
+- Build order recommendation: (1) bandit tips + SM-2 habits + <install> (pure TS, week 1) → (2) OCR ingredient scanner → (3) MediaPipe AR mirror + auto face-shape → (4) offline stylist (Prompt API) + build-time embeddings → (5) WebGPU color lab / VLM lab / OPFS / voice
+- All suggestions preserve the two charters: on-device by default, AI routing invisible to users
