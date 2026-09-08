@@ -16,6 +16,7 @@ import { useAurelia, type TabId, type Category } from "@/lib/store";
 import { shareCard, shareText } from "@/lib/share";
 import { Card, Chip, Eyebrow, SectionHeader, SaveButton } from "./../bits";
 import { HeroIllustration } from "./../illustrations";
+import { PassportCard } from "../passport-card";
 import { tabIcons, ArrowRightIcon, SparkleIcon, ShareIcon, FlameIcon, PencilIcon, DropletIcon, MirrorIcon, ChatIcon, SwatchDropIcon } from "./../icons";
 import { seasonById } from "@/data/seasons";
 
@@ -74,7 +75,8 @@ export function HomeTab() {
 
   const effectiveSkin = skinResult?.base ?? profile?.skinType ?? null;
   const skinType = effectiveSkin ? skinTypes.find((t) => t.id === effectiveSkin) : null;
-  const suggestedLook = profile?.vibe ? looks.find((l) => l.id === vibeLook[profile.vibe]) ?? looks[0] : null;
+  const vibeKey = profile?.vibe;
+  const suggestedLook = vibeKey && vibeKey in vibeLook ? looks.find((l) => l.id === vibeLook[vibeKey]) ?? looks[0] : null;
 
   const shareTip = async () => {
     const res = await shareText({
@@ -131,7 +133,10 @@ export function HomeTab() {
         >
           <div className="p-5 relative z-10">
             <div className="flex items-center gap-3.5">
-              <span className="grid place-items-center w-12 h-12 rounded-[16px] shrink-0" style={{ background: "var(--rose)", color: "white" }}>
+              <span
+                className="grid place-items-center w-12 h-12 rounded-[16px] shrink-0 shadow-[0_4px_12px_rgba(168,74,98,0.28)]"
+                style={{ background: "var(--rose)", color: "var(--rose-foreground)" }}
+              >
                 <ChatIcon width={24} height={24} />
               </span>
               <div className="min-w-0 flex-1">
@@ -141,7 +146,10 @@ export function HomeTab() {
                   {season ? `. Knows your ${season.name} palette` : ""}
                 </p>
               </div>
-              <span className="shrink-0 h-8 px-4 rounded-full bg-rose text-white text-[12px] font-bold grid place-items-center" style={{ background: "var(--rose)" }}>
+              <span
+                className="shrink-0 h-8 px-4 rounded-full text-[12px] font-bold grid place-items-center"
+                style={{ background: "var(--rose)", color: "var(--rose-foreground)" }}
+              >
                 Chat
               </span>
             </div>
@@ -332,7 +340,7 @@ export function HomeTab() {
       {installEvent && (
         <section className="mt-8">
           <Card className="p-4 flex items-center gap-3.5 bg-[linear-gradient(135deg,var(--rose-soft),var(--surface))]">
-            <span className="grid place-items-center w-11 h-11 rounded-[14px] bg-rose text-white shrink-0">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "var(--rose)", color: "var(--rose-foreground)" }}>
               <SparkleIcon width={22} height={22} />
             </span>
             <div className="min-w-0 flex-1">
@@ -345,13 +353,20 @@ export function HomeTab() {
                 await installEvent.userChoice;
                 setInstallEvent(null);
               }}
-              className="press h-9 px-4 rounded-full bg-rose text-white text-[12.5px] font-bold shrink-0"
+              className="press h-9 px-4 rounded-full text-[12.5px] font-bold shrink-0"
+              style={{ background: "var(--rose)", color: "var(--rose-foreground)" }}
             >
               Install
             </button>
           </Card>
         </section>
       )}
+
+      {/* Beauty Passport — portable zero-party profile */}
+      <section className="mt-8">
+        <SectionHeader eyebrow="Your data, your property" title="Beauty Passport" accent="var(--gold)" />
+        <PassportCard />
+      </section>
 
       {/* Saved shortcut */}
       <section className="mt-8 mb-2">

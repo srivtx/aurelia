@@ -29,7 +29,7 @@ const catAccent: Record<Category, string> = {
   hair: "var(--cat-hair)",
 };
 
-export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function SearchOverlay({ open, onClose, initialQuery }: { open: boolean; onClose: () => void; initialQuery?: string }) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,17 +41,18 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
     return () => clearTimeout(t);
   }, [query]);
 
-  /* reset when opened */
+  /* reset when opened — a shared-text seed (initialQuery) prefills */
   useEffect(() => {
     if (open) {
+      const seed = typeof initialQuery === "string" ? initialQuery.slice(0, 80) : "";
       const t = setTimeout(() => {
-        setQuery("");
-        setDebounced("");
+        setQuery(seed);
+        setDebounced(seed);
         inputRef.current?.focus();
       }, 60);
       return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, initialQuery]);
 
   /* back-button + escape handling */
   const pushedRef = useRef(false);

@@ -1,6 +1,9 @@
-/* Aurelia service worker — app shell + offline-first content */
-const VERSION = "aurelia-v3";
+/* Aurelia service worker — app shell + offline-first content
+   + Web Share Target inbox (Android share sheet → on-device analysis) */
+const VERSION = "aurelia-v4";
 const SHELL_CACHE = `${VERSION}-shell`;
+const SHARE_INBOX = "aurelia-share-inbox";
+const SHARE_INBOX_URL = "/share-inbox/last";
 const ASSETS = [
   "/",
   "/manifest.json",
@@ -34,7 +37,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith("aurelia-") && !key.startsWith(VERSION))
+            .filter((key) => key.startsWith("aurelia-") && !key.startsWith(VERSION) && key !== SHARE_INBOX)
             .map((key) => caches.delete(key))
         )
       )
@@ -42,11 +45,78 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+/* ---------- Web Share Target ----------
+   Android's share sheet POSTs multipart/form-data to /share-target
+   (manifest.share_target). We stash the image in Cache Storage and
+   notify/redirect — the page then pulls it from /share-inbox/last and
+   runs the on-device k-means/ΔE pipeline. Text shares become a
+   prefilled global search via ?q=. Nothing is ever uploaded. */
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
-
   const url = new URL(request.url);
+
+  /* POST /share-target — receives the shared file/text */
+  if (request.method === "POST" && url.pathname === "/share-target") {
+    event.respondWith(
+      (async () => {
+        try {
+          const formData = await request.formData();
+          const files = formData.getAll("image").concat(formData.getAll("images")).filter((f) => f instanceof File);
+          const text = String(formData.get("text") ?? "");
+          const title = String(formData.get("title") ?? "");
+
+          if (files.length > 0) {
+            const file = files[0];
+            const cache = await caches.open(SHARE_INBOX);
+            await cache.put(
+              SHARE_INBOX_URL,
+              new Response(await file.arrayBuffer(), {
+                headers: {
+                  "content-type": file.type || "application/octet-stream",
+                  "x-filename": encodeURIComponent(file.name || "shared-photo"),
+                  "cache-control": "no-store",
+                },
+              })
+            );
+            const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+            for (const c of clients) {
+              c.postMessage({ type: "shared-image", name: file.name, mime: file.type });
+            }
+            return Response.redirect("/?shared=1#/colors", 303);
+          }
+
+          if (text || title) {
+            const q = encodeURIComponent([title, text].filter(Boolean).join(" ").slice(0, 80));
+            const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+            for (const c of clients) {
+              c.postMessage({ type: "shared-text", text, title });
+            }
+            return Response.redirect(`/?q=${q}#/`, 303);
+          }
+        } catch (err) {
+          /* fall through to a safe redirect */
+        }
+        return Response.redirect("/", 303);
+      })()
+    );
+    return;
+  }
+
+  /* GET /share-inbox/last — the page picks up the stashed image */
+  if (request.method === "GET" && url.pathname === SHARE_INBOX_URL) {
+    event.respondWith(
+      caches.open(SHARE_INBOX).then((cache) =>
+        cache.match(SHARE_INBOX_URL).then(
+          (hit) =>
+            hit ||
+            new Response("", { status: 404, headers: { "cache-control": "no-store" } })
+        )
+      )
+    );
+    return;
+  }
+
+  if (request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
 
   /* navigation: network-first with offline fallback to the shell */

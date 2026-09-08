@@ -125,3 +125,48 @@ Stage Summary:
 - Regression: e2e-new-features.mjs 25/25 PASS; hydration-verify.mjs 0 hydration errors (IST + persisted state)
 - Lint: clean; dev server GET / 200
 - Hygiene: z-ai SDK never imported client-side; photo processing never leaves device; season/date logic in event handlers only
+
+---
+Task ID: R-3
+Agent: research (deep-tech + providers)
+Task: Research WebMCP current spec shape, free OpenAI-compatible LLM providers (Groq/OpenRouter/Cerebras/Gemini/Mistral), modern PWA APIs, and original deep-tech ideas → docs/RESEARCH-DEEPTECH.md
+
+Work Log:
+- Read worklog.md fully; inspected app engine APIs (color-science, outfit-engine, routine-engine, seasons, actives, search, store) to ground WebMCP tool examples in real signatures
+- Ran 20+ live web searches + 15 full-page fetches (z-ai web_search/page_reader) of primary sources: W3C WebMCG spec (2026-09-04 draft), webmachinelearning/webmcp README + declarative explainer + implementation-status + Aug-2025 proposal, Chrome WebMCP docs, Patrick Brosset update article, ChatGPT "Site tools" docs, OpenAI WebMCP Challenge, Groq docs (rate-limits/models/deprecations/OpenAI-compat), OpenRouter docs + live /v1/models API, Cerebras docs (llms.txt + model catalog), Gemini docs (rate limits/models/OpenAI-compat), Mistral limits, MDN + raw browser-compat-data for PWA APIs, Chrome Prompt API docs
+- Key WebMCP findings: current API is document.modelContext (registerTool/getTools/executeTool, annotations, exposedTo cross-origin) — the <script type="application/mcp+json"> + window.mcp JSON-RPC shape from early coverage never shipped (manifest-tools idea explicitly rejected); declarative API is now HTML form attributes; Chrome 149 + Edge 150 origin trials live, ChatGPT Desktop ships it in production (imperative top-level only), Brave experimental; security = SecureContext + origin isolation + permissions-policy "tools" + per-invocation review + spec-level prompt-injection mitigations
+- Key provider findings: Groq deprecated llama-3.3-70b/llama-3.1-8b (2026-08-16) → free anchors now gpt-oss-120b/20b + qwen3.6/3.8-27b (30 RPM/1K RPD/8K TPM/200K TPD); OpenRouter free pool queried live (16 :free models, 20 RPM, 50/1000 RPD); Cerebras free trial very tight (5/1 RPM, 2 models); Gemini OpenAI-compat endpoint free ~10 RPM/250K TPM; Mistral ~1 rps/1B tok/mo
+- Wrote docs/RESEARCH-DEEPTECH.md: exec summary; §1 WebMCP deep-dive incl. evolution table (early concept → Aug 2025 → Feb 2026 → current), full IDL, security model, browser status, 5 real implementations, and a complete Aurelia-tailored registerTool example (score_outfit, get_season, find_matching_colors, get_routine, check_ingredient_conflict, search_knowledge) with compat shim; §2 provider matrix (7 rows: endpoints/auth/model IDs/free limits/gotchas + recommended cascade); §3 PWA API reference with manifest/SW/CSS snippets + live BCD support; §4 five ranked original ideas with feasibility; §5 now-vs-later table; sources with internal-knowledge-only items flagged
+- Research-only: no app code changed; internal-knowledge-only claims explicitly marked in doc
+
+Stage Summary:
+- Deliverable: docs/RESEARCH-DEEPTECH.md (6 sections, live-verified with primary sources)
+- WebMCP: recommend coding against document.modelContext.registerTool with a navigator.modelContext fallback shim; all Aurelia tools read-only; ~1 day effort; works today in ChatGPT Desktop + Chrome/Edge origin trials; script-tag manifest is obsolete folklore
+- Providers: free capacity is real but IDs churn quarterly — build env-keyed cascade (Gemini → Groq → OpenRouter) with dynamic model discovery, 429/retry-after backoff, and Groq prompt caching for the fixed system prompt
+- Top 3 implement-now: (1) WebMCP tool server for Aurelia's deterministic engines (agent-callable color science — first mover), (2) Share-to-Analyze (Android share_target + desktop file_handlers feeding on-device palette/ΔE engines, privacy-verifiable), (3) Beauty Passport zero-party export + storage.persist() protection
+- Next: hand to implementation agent — P0 items in RESEARCH-DEEPTECH.md §5 (persist(), share-target, WebMCP tools, passport, evidence cards)
+
+---
+Task ID: 5
+Agent: main
+Task: Chat/product fixes (markdown, contrast, model picker) + free-provider backend + WebMCP + share-target + Beauty Passport + docs + push
+
+Work Log:
+- ROOT CAUSE of all reported visual bugs: raw CSS vars (--rose, --rose-soft, --sage, --honey, --ink-2, --cat-colors…) were never defined (real names: --primary, --primary-soft, --success…) → unresolved vars = transparent bg / unset colors → white-on-transparent Ask Aurelia icon (light mode), invisible user chat bubble ("can't see the query"), light-locked SVGs in dark mode
+- Fix: canonical token aliases declared in BOTH :root and .dark (load-bearing: :root-only aliases freeze light values), --rose-foreground token, theme-aware hero glow; illustrations now reference canonical vars (no hardcoded fallback hexes); all white-on-rose surfaces use var(--rose-foreground)
+- Chat upgrades: markdown-lite renderer (src/components/aurelia/markdown.tsx, XSS-safe React text nodes; fixed the .match(g-regex) index bug) — no more raw *** ** *; NDJSON token streaming from /api/stylist; chat input bulletproofed (.aurelia-input + autofill fix); typing dots → live stream
+- Multi-provider backend: src/lib/ai-providers.ts (registry: zai built-in + Groq/Gemini/OpenRouter/Cerebras/Mistral/custom OpenAI-compatible; live /models discovery with 10-min cache + curated fallbacks per 2026-09 research; SSE→NDJSON), /api/models route, /api/stylist rewrite (provider validation, clear 400 for unconfigured keys, 429/401 messages), model picker sheet in chat header (status dots, Get key links, key hints, Escape to close), aiModel persisted in store, RAG grounding (src/lib/stylist-rag.ts: BM25-lite + synonyms + title boost + source diversity)
+- WebMCP agent bridge: src/lib/webmcp.ts registers 7 read-only tools (score_outfit, find_matching_colors, get_season, get_routine, check_ingredient_conflict, search_knowledge, compare_colors) on document.modelContext (Sept-2026 spec) with navigator.modelContext shim; mounted via PlatformBridge
+- Platform bridge: storage persistence (navigator.storage.persist), streak Badging API, Web Share Target (manifest share_target + SW POST /share-target → Cache Storage inbox → photo analyzer pickup; text → prefilled global search), File Handling (launchQueue)
+- Beauty Passport: src/lib/passport.ts + passport-card.tsx on Home (export JSON/download/share, import with validation)
+- sw.js → aurelia-v4 (share target handlers, inbox GET, inbox cache preserved on activate); manifest share_target + file_handlers; SearchOverlay initialQuery
+- Fixed pre-existing type errors (ignoreBuildErrors had hidden them): sheet.tsx Category import, home-tab vibe index, outfit-engine season guard, search.ts sunscreen points, route null checks
+- Docs: docs/DEPLOYMENT.md (free model setup + Vercel/Docker/troubleshooting), docs/CONTEXT.md (full repo context preservation guide), .env.example, README rewritten sections (features + docs index)
+- New E2E: scripts/e2e-chat-fixes.mjs
+
+Stage Summary:
+- e2e-chat-fixes: 23/23 PASS — icon bg rgb(168,74,98) light / rgb(224,149,167)+dark-ink fg dark; user bubble real rose bg; markdown rendered (strong elements, no raw **); model picker lists Groq + GROQ_API_KEY hint + Escape close; hero SVG dark fill rgb(58,42,46); 0 hydration errors
+- Regression: hydration-verify 0 errors; e2e-new-features all pass; e2e-deep-tech all pass (stylist reply flows through .markdown-body)
+- Lint clean; tsc src/ clean; production build success
+- /api/models live: zai configured, others show actionable key hints; /api/stylist streams NDJSON; unconfigured provider → clear 400 with needsKey/keyUrl
+- Ready to push as srivtx

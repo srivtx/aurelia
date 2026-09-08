@@ -6,11 +6,12 @@
    The photo never leaves the phone — no upload, no network.
    ============================================================ */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { extractPalette, type ExtractedSwatch } from "@/lib/palette-extract";
 import { analyzeOutfit } from "@/lib/outfit-engine";
 import { seasonById } from "@/data/seasons";
 import { useAurelia } from "@/lib/store";
+import { consumeSharePending, pullSharedImage } from "@/lib/share-inbox";
 import { Card, Chip, Eyebrow } from "./bits";
 import { CameraIcon, FlaskIcon } from "./icons";
 
@@ -45,6 +46,20 @@ export function PhotoAnalyzer({ onUseInLab }: { onUseInLab: (hexes: string[]) =>
       setError(e instanceof Error && e.message.includes("uniform") ? "That photo is a single flat color — try one with a few tones." : "Couldn't read that photo — try another one ✦");
     }
   };
+
+  /* share-target handoff: if a photo was shared from the OS share
+     sheet (Android installed PWA), pull it from the SW stash once. */
+  useEffect(() => {
+    if (!consumeSharePending()) return;
+    let cancelled = false;
+    (async () => {
+      const file = await pullSharedImage();
+      if (!cancelled && file) handleFile(file);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const top3 = swatches.slice(0, 3).map((s) => s.hex);
   const analysis = top3.length >= 2 ? analyzeOutfit(top3, season) : null;

@@ -89,7 +89,7 @@ export function searchIndex(): SearchEntry[] {
     id: "spf-guide",
     category: "skin",
     title: "Sunscreen, honestly",
-    body: `${sunscreenGuide.title} ${sunscreenGuide.points.map((p) => p.text).join(" ")}`,
+    body: `${sunscreenGuide.title} ${sunscreenGuide.points.join(" ")}`,
     snippet: sunscreenGuide.title,
     kind: "Guide",
   });

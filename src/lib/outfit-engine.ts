@@ -188,7 +188,7 @@ export function analyzeOutfit(colors: string[], season?: Season | null): OutfitA
   }
 
   // season fit
-  if (seasonFit) {
+  if (seasonFit && season) {
     const v = seasonFit.overall;
     factors.push({
       label: `Your ${season.name} fit`,

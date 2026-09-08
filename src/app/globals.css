@@ -44,6 +44,8 @@
   --color-coral: var(--error);
   --color-coral-soft: var(--error-soft);
 
+  --color-rose-foreground: var(--primary-foreground);
+
   --radius-card: 16px;
   --radius-sheet: 24px;
 
@@ -90,6 +92,32 @@
   --warning-soft: #f7ecd9;
   --error: #b5483f;
   --error-soft: #f9e5e2;
+
+  /* ---- canonical aliases (raw var() names used in components & SVGs).
+     These resolve at use-site, so .dark overrides below apply automatically.
+     Without them, var(--rose) etc. fall back to transparent/unset — which
+     caused white-on-transparent icons, invisible chat text and light-locked
+     SVG illustrations. Kept in BOTH blocks on purpose (see .dark note). ---- */
+  --rose: var(--primary);
+  --rose-soft: var(--primary-soft);
+  --rose-graphic: var(--primary-graphic);
+  --rose-deep: var(--primary-pressed);
+  --rose-foreground: var(--primary-foreground);
+  --terra: var(--secondary);
+  --gold: var(--accent);
+  --sage: var(--success);
+  --sage-soft: var(--success-soft);
+  --honey: var(--warning);
+  --honey-soft: var(--warning-soft);
+  --coral: var(--error);
+  --coral-soft: var(--error-soft);
+  --ink: var(--ink-900);
+  --ink-2: var(--ink-600);
+  --ink-3: var(--ink-400);
+  --cat-colors: var(--cat-color);
+
+  /* hero glow strength (theme-aware) */
+  --hero-glow: 0.35;
 
   /* shadcn compat */
   --radius: 1rem;
@@ -141,6 +169,31 @@
   --warning-soft: #383024;
   --error: #e8847c;
   --error-soft: #3a2724;
+
+  /* aliases re-declared inside .dark: custom properties resolve var()
+     references when they are COMPUTED on the element that declares them —
+     a :root-only alias would freeze the light-mode value for all descendants.
+     Re-declaring here makes every alias pick up the dark tokens above. */
+  --rose: var(--primary);
+  --rose-soft: var(--primary-soft);
+  --rose-graphic: var(--primary-graphic);
+  --rose-deep: var(--primary-pressed);
+  --rose-foreground: var(--primary-foreground);
+  --terra: var(--secondary);
+  --gold: var(--accent);
+  --sage: var(--success);
+  --sage-soft: var(--success-soft);
+  --honey: var(--warning);
+  --honey-soft: var(--warning-soft);
+  --coral: var(--error);
+  --coral-soft: var(--error-soft);
+  --ink: var(--ink-900);
+  --ink-2: var(--ink-600);
+  --ink-3: var(--ink-400);
+  --cat-colors: var(--cat-color);
+
+  /* softer hero glow on dark canvas */
+  --hero-glow: 0.09;
 
   --card: var(--surface);
   --card-foreground: var(--ink-900);
@@ -252,7 +305,7 @@
     content: "";
     position: absolute;
     inset: -60% -30%;
-    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.35), transparent);
+    background: radial-gradient(closest-side, rgba(255, 255, 255, var(--hero-glow)), transparent);
     animation: hero-drift 9s ease-in-out infinite alternate;
     pointer-events: none;
   }
@@ -322,6 +375,25 @@
     min-width: 44px;
     min-height: 44px;
     touch-action: manipulation;
+  }
+
+  /* chat input bulletproofing: typed text is ALWAYS ink-on-muted.
+     Chrome autofill used to repaint the field white — pin both colors. */
+  .aurelia-input {
+    color: var(--ink-900);
+    caret-color: var(--primary);
+    -webkit-text-fill-color: var(--ink-900);
+  }
+  .aurelia-input::placeholder {
+    color: var(--ink-400);
+    -webkit-text-fill-color: var(--ink-400);
+  }
+  .aurelia-input:-webkit-autofill,
+  .aurelia-input:-webkit-autofill:hover,
+  .aurelia-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 60px var(--surface-muted) inset;
+    -webkit-text-fill-color: var(--ink-900);
+    transition: background-color 9999s ease-out;
   }
 
   .pb-safe {

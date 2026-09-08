@@ -9,7 +9,8 @@ import { ReactNode, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { XIcon } from "./icons";
-import { SaveButton, type Category } from "./bits";
+import { SaveButton } from "./bits";
+import { type Category } from "@/lib/store";
 
 export interface SheetData {
   id: string;

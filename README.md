@@ -20,9 +20,12 @@ Aurelia is an installable, offline-capable Progressive Web App built with Next.j
 - **Makeup** — five occasion looks with step-by-step instructions, the 12-step application order, face/eye/lip 101 guides, common mistakes, and tool care.
 - **Skincare** — a 10-question skin-type quiz, a daily AM/PM routine checklist, an ingredient dictionary, mixing rules, and the **Ingredient Lab** — an evidence-based conflict/synergy matrix with an AM/PM routine sequencer (pH-ordered, thin→thick, SPF last).
 - **Hair** — hairstyles matched to eight outfit categories, ten master styles, face-shape guides, and the **Face Meter** — an anthropometric ratio classifier (length/cheekbone, forehead and jaw taper) with a live-morphing SVG face preview.
-- **Ask Aurelia** — an AI stylist chat (server-side LLM) grounded in the app's knowledge base and personalized with your season, skin type, and vibe.
+- **Ask Aurelia** — an AI stylist chat with **token-by-token streaming**, markdown-rendered replies, knowledge-grounded answers (RAG over the app's own content), and a **model picker**: bring a free key from Groq, Google Gemini, OpenRouter, Cerebras, Mistral, or point it at any local OpenAI-compatible server (Ollama/LM Studio). The built-in cloud model needs no key.
+- **Agent-ready (WebMCP)** — the color-science, season, routine, conflict and search engines are registered as **read-only MCP tools** (`document.modelContext`), so your browser/desktop AI agent (ChatGPT site tools, Chrome/Edge trials) can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge` and `compare_colors` directly against the live page.
+- **Share-to-Analyze** — on Android, share any image from anywhere into Aurelia (installed PWA) and the on-device palette analyzer runs on it; on desktop, "Open with Aurelia" via file handlers. Nothing is uploaded, ever.
+- **Beauty Passport** — your profile (season, skin type, vibe) as a portable JSON file you own: export, share, import on another device.
 
-App-level features: global search across all content including the tools, a three-step onboarding flow that personalizes the home screen, saved favorites, shareable tip and palette cards, dark mode, and deep-linkable hash routes.
+App-level features: global search across all content including the tools, a three-step onboarding flow that personalizes the home screen, saved favorites, shareable tip and palette cards, glow streak with home-screen badge, storage persistence, dark mode, and deep-linkable hash routes.
 
 ## Tech Stack
 
@@ -47,7 +50,10 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. Everything works with zero configuration — including
+the AI stylist (built-in provider). To plug in **free models** (Groq, Gemini,
+OpenRouter, …) or a **local LLM**, see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — it's a 2-minute, one-env-var setup.
 
 ## Scripts
 
@@ -64,6 +70,7 @@ Optional verification scripts (Playwright, installed globally):
 node scripts/hydration-verify.mjs   # hydration check under a non-UTC timezone with persisted state
 node scripts/e2e-new-features.mjs   # end-to-end pass over onboarding, search, routing, 404
 node scripts/e2e-deep-tech.mjs      # Color Lab, Ingredient Lab, Face Meter, AI stylist + hydration watch
+node scripts/e2e-chat-fixes.mjs     # chat markdown, contrast, model picker, dark-mode tokens
 ```
 
 ## Deployment
@@ -96,22 +103,38 @@ Any Node.js host or container works. The app is fully static at the root route a
 - `public/sw.js` — service worker with app-shell caching and an in-app update prompt.
 - iOS splash screens are provided for common device sizes in `public/icons/`.
 
+## Documentation
+
+Everything a contributor needs is preserved in [`docs/`](docs/):
+
+- **[docs/CONTEXT.md](docs/CONTEXT.md)** — start here: full codebase map, design-token rules (including the alias pitfall), hydration guardrails, engine reference, how to add content/features.
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — free-model setup (Groq/Gemini/OpenRouter/Cerebras/Mistral/local), Vercel + Docker + self-host guides, troubleshooting.
+- **[docs/RESEARCH-DEEPTECH.md](docs/RESEARCH-DEEPTECH.md)** — WebMCP spec deep-dive, free-LLM provider matrix, modern PWA APIs, ranked deep-tech roadmap.
+- **[docs/RESEARCH-PWA-LAUNCH.md](docs/RESEARCH-PWA-LAUNCH.md)** — PWA launch checklist and benchmarks.
+- **[docs/RESEARCH-BEAUTY-APP-UX.md](docs/RESEARCH-BEAUTY-APP-UX.md)** — competitor benchmark and feature-gap analysis.
+- `worklog.md` — append-only build log of every task and verification run.
+
 ## Project Structure
 
 ```
 src/
-  app/                        # root layout, page (tab router), 404, error boundaries, /api/stylist
+  app/                        # root layout, page (tab router), 404, error boundaries,
+                              # /api/stylist (multi-provider streaming + RAG), /api/models
   components/aurelia/         # shell, bottom sheet, UI primitives, icons, illustrations,
-                              # onboarding, search overlay, stylist chat, season analysis,
-                              # outfit lab, photo analyzer, ingredient lab, face meter
+                              # onboarding, search overlay, stylist chat (streaming + model
+                              # picker), markdown renderer, platform bridge (WebMCP/badge/
+                              # share-target), season analysis, outfit lab, photo analyzer,
+                              # ingredient lab, face meter, beauty passport
   components/aurelia/tabs/    # home, colors, makeup, skin, hair
   data/                       # content knowledge base (colors, makeup, skincare, hair,
                               # tips, 12 seasons, active ingredients)
-  lib/                        # zustand store, search index, share utilities,
+  lib/                        # zustand store, search index, share utilities, RAG grounding,
+                              # AI provider registry, WebMCP tools, passport, share inbox,
                               # color-science engine, outfit engine, palette extraction
                               # (k-means), routine sequencer, face-shape classifier
-public/                       # manifest, service worker, icons, splash screens, og image
-docs/                         # research and design briefs
+public/                       # manifest (share_target, file_handlers), service worker,
+                              # icons, splash screens, og image
+docs/                         # research + context + deployment guides
 ```
 
 ## License

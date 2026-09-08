@@ -20,6 +20,7 @@ import { Card, Chip, SaveButton } from "@/components/aurelia/bits";
 import { EmptySavedIllustration, SparkleRing } from "@/components/aurelia/illustrations";
 import { tabIcons, SparkleIcon, RefreshIcon } from "@/components/aurelia/icons";
 import { StylistChat } from "@/components/aurelia/stylist-chat";
+import { PlatformBridge } from "@/components/aurelia/platform-bridge";
 
 /* Lazy-load the four heavy tabs — smaller first paint */
 const ColorsTab = dynamic(() => import("@/components/aurelia/tabs/colors-tab").then((m) => m.ColorsTab), {
@@ -174,7 +175,20 @@ function AureliaApp() {
   const { tab, profile, saved, stylistOpen, setStylistOpen } = useAurelia();
   const [savedOpen, setSavedOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchSeed, setSearchSeed] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+
+  /* shared-text → open global search prefilled (from share target) */
+  useEffect(() => {
+    const h = (e: Event) => {
+      const q = (e as CustomEvent).detail?.query;
+      if (typeof q === "string" && q.trim()) setSearchSeed(q);
+      else setSearchSeed(null);
+      setSearchOpen(true);
+    };
+    window.addEventListener("aurelia:open-search", h);
+    return () => window.removeEventListener("aurelia:open-search", h);
+  }, []);
 
   /* ---- 1. Hydration-safe boot: rehydrate persisted state AFTER mount,
      then streak touch + onboarding decision. ---- */
@@ -285,7 +299,7 @@ function AureliaApp() {
         <SavedSheet open={savedOpen} onClose={() => setSavedOpen(false)} />
       </Shell>
 
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchOverlay key={searchSeed ?? "s"} open={searchOpen} onClose={() => setSearchOpen(false)} initialQuery={searchSeed ?? undefined} />
 
       {/* AI stylist chat — mounted once, survives tab switches */}
       <StylistChat open={stylistOpen} onClose={() => setStylistOpen(false)} />
@@ -295,6 +309,10 @@ function AureliaApp() {
       <AnimatePresence>{hydrated && !profile && <Onboarding key="onboarding" />}</AnimatePresence>
 
       <Toast />
+
+      {/* platform integrations: WebMCP tools · storage persistence ·
+          streak badge · share-target handoff (renders nothing) */}
+      <PlatformBridge />
     </>
   );
 }

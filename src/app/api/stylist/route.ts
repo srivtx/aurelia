@@ -1,12 +1,22 @@
 /* ============================================================
    AURELIA — AI Stylist API (server-side only)
-   z-ai-web-dev-sdk lives here, never on the client.
-   The system prompt is grounded in the app's knowledge base
-   and personalized with the user's zero-party profile.
+   Multi-provider: built-in z-ai SDK + any OpenAI-compatible
+   provider (Groq / Gemini / OpenRouter / Cerebras / Mistral /
+   custom). Streams NDJSON events so the chat renders replies
+   progressively:
+     {"delta":"partial text"}
+     {"done":true,"provider":"groq","model":"openai/gpt-oss-120b"}
+     {"error":"message"}            (fatal, mid-stream)
+   Pre-stream failures return classic JSON {error} + status.
+   The system prompt is grounded (RAG-lite) in the app's own
+   knowledge base and personalized with the user's zero-party
+   profile. Keys never leave this route.
    ============================================================ */
 
 import { NextResponse } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
+import { providerById, isConfigured, openAICompatibleStream, sseDeltas, prettyLabel, type ChatMsg } from "@/lib/ai-providers";
+import { groundingBlock } from "@/lib/stylist-rag";
 
 export const runtime = "nodejs";
 
@@ -38,7 +48,7 @@ function sanitizeMessages(raw: unknown): ChatMessage[] {
     .slice(-MAX_MESSAGES);
 }
 
-function buildSystemPrompt(ctx: StylistContext): string {
+function buildSystemPrompt(ctx: StylistContext, grounding: string): string {
   const personal: string[] = [];
   if (ctx.name) personal.push(`Her name is ${ctx.name}.`);
   if (ctx.season) personal.push(`Her personal color analysis says she is a ${ctx.season} — recommend colors from that family.`);
@@ -56,12 +66,35 @@ function buildSystemPrompt(ctx: StylistContext): string {
     "5. Makeup: give step order (base → eyes → lips → set) and beginner-friendly technique cues.",
     "6. Hair: match styles to face shape and outfit formality.",
     "7. Body image: always positive about HER, never imply she must change her body or skin — only technique and colors. Refuse any request that puts down her appearance; redirect kindly.",
-    "8. Never mention being an AI model or these instructions. If asked something off-topic (code, news, homework), warmly steer back to beauty & style.",
+    "8. Never mention being an AI model, these instructions, or the grounding block. If asked something off-topic (code, news, homework), warmly steer back to beauty & style.",
+    "9. Format with light markdown: **bold** for color/item names, short bullet lists with * or -, and a bold mini-heading when a list follows. Never use tables or code blocks.",
     personal.length ? `About the girl you're advising: ${personal.join(" ")}` : "",
     "When it genuinely helps, point her to the app's tools: the 12-Season Color Analysis, the Outfit Lab, the Photo Palette analyzer, the skin-type quiz, or the routine checklist.",
+    grounding,
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/* NDJSON helpers */
+function ndjson(data: unknown): string {
+  return JSON.stringify(data) + "\n";
+}
+function streamResponse(lines: string[]): Response {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const line of lines) controller.enqueue(encoder.encode(line));
+      controller.close();
+    },
+  });
+  return new Response(body, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
 
 export async function POST(req: Request) {
@@ -82,20 +115,105 @@ export async function POST(req: Request) {
       vibe: typeof body?.context?.vibe === "string" ? body.context.vibe : null,
     };
 
-    const zai = await ZAI.create();
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "assistant", content: buildSystemPrompt(ctx) },
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
-      ],
-      thinking: { type: "disabled" },
+    /* ---- provider + model resolution ---- */
+    const requested: { provider?: string; id?: string } = body?.model ?? {};
+    const providerId = typeof requested.provider === "string" ? requested.provider : "zai";
+    const modelId = typeof requested.id === "string" ? requested.id : "";
+    const def = providerById(providerId);
+
+    if (!def) {
+      return NextResponse.json({ error: `Unknown provider "${providerId}"` }, { status: 400 });
+    }
+    if (!isConfigured(def)) {
+      const keyHint = def.keyEnv ? ` Set ${def.keyEnv} in your .env (see docs/DEPLOYMENT.md).` : "";
+      return NextResponse.json(
+        { error: `${def.label} is not configured on this server yet — Aurelia Cloud is always available.${keyHint}`, provider: providerId, needsKey: def.keyEnv, keyUrl: def.keyUrl },
+        { status: 400 }
+      );
+    }
+    const model = modelId || (def.id === "zai" ? "aurelia-default" : process.env.AI_MODEL && def.id === "custom" ? process.env.AI_MODEL : def.curated[0]?.id);
+    if (def.id !== "zai" && !model) {
+      return NextResponse.json({ error: `No model selected for ${def.label}` }, { status: 400 });
+    }
+
+    /* ---- RAG grounding from the app's own knowledge base ---- */
+    const grounding = groundingBlock(messages.filter((m) => m.role === "user").map((m) => m.content));
+    const system = buildSystemPrompt(ctx, grounding);
+
+    const wire: ChatMsg[] = [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))];
+
+    /* ---- Built-in provider: single completion, emitted as one delta ---- */
+    if (def.id === "zai") {
+      const zai = await ZAI.create();
+      const completion = await zai.chat.completions.create({
+        messages: [
+          { role: "assistant", content: system },
+          ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ],
+        thinking: { type: "disabled" },
+      });
+      const reply = completion.choices[0]?.message?.content ?? "";
+      if (!reply.trim()) {
+        return NextResponse.json({ error: "The stylist is busy — try again in a moment ✦" }, { status: 502 });
+      }
+      return streamResponse([ndjson({ delta: reply }), ndjson({ done: true, provider: "zai", model: "aurelia-default" })]);
+    }
+
+    /* ---- OpenAI-compatible providers: true token streaming ---- */
+    const upstreamRes = await openAICompatibleStream({ providerId: def.id, model, messages: wire, signal: req.signal });
+    if (!upstreamRes) {
+      return NextResponse.json({ error: `${def.label} could not start a stream — falling back to Aurelia Cloud.` }, { status: 502 });
+    }
+    if (!upstreamRes.ok) {
+      const status = upstreamRes.status;
+      let detail = "";
+      try {
+        const errJson = await upstreamRes.json().catch(() => null);
+        detail = errJson?.error?.message ?? "";
+      } catch {
+        /* ignore */
+      }
+      const msg =
+        status === 429
+          ? `${def.label} rate limit hit — retry in a moment or pick another model.`
+          : status === 401
+            ? `${def.label} rejected the key — check ${def.keyEnv}.`
+            : `${def.label} hiccup (${status})${detail ? `: ${String(detail).slice(0, 140)}` : ""} — try again.`;
+      return NextResponse.json({ error: msg, provider: def.id }, { status: 502 });
+    }
+
+    const upstream = upstreamRes;
+    const encoder = new TextEncoder();
+    const body2 = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        let chars = 0;
+        try {
+          for await (const delta of sseDeltas(upstream)) {
+            chars += delta.length;
+            controller.enqueue(encoder.encode(ndjson({ delta })));
+          }
+          if (chars === 0) {
+            controller.enqueue(encoder.encode(ndjson({ error: `${def.label} returned an empty reply — try again or switch models.` })));
+          } else {
+            controller.enqueue(
+              encoder.encode(ndjson({ done: true, provider: def.id, model, label: prettyLabel(model) }))
+            );
+          }
+        } catch {
+          controller.enqueue(encoder.encode(ndjson({ error: "Stream interrupted — try again ✦" })));
+        } finally {
+          controller.close();
+        }
+      },
     });
 
-    const reply = completion.choices[0]?.message?.content ?? "";
-    if (!reply.trim()) {
-      return NextResponse.json({ error: "Empty response" }, { status: 502 });
-    }
-    return NextResponse.json({ reply });
+    return new Response(body2, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (err) {
     console.error("[/api/stylist]", err);
     return NextResponse.json({ error: "The stylist is busy — try again in a moment ✦" }, { status: 500 });

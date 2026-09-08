@@ -167,13 +167,13 @@ check('chat overlay opens', (await page.locator('text=Your pocket stylist').coun
 check('chat header shows season', (await page.locator(`[aria-label="Ask Aurelia — AI stylist chat"] >> text=${seasonName}`).count()) > 0);
 await page.fill('input[aria-label="Message Aurelia"]', `Which lip color suits a ${seasonName}?`);
 await page.click('button[aria-label="Send message"]');
-// wait for reply (LLM call)
+// wait for reply (LLM call → streams into .markdown-body)
 let reply = '';
 for (let i = 0; i < 30; i++) {
   await page.waitForTimeout(1000);
-  const bubbles = page.locator('div.whitespace-pre-wrap');
+  const bubbles = page.locator('[aria-label="Ask Aurelia — AI stylist chat"] .markdown-body');
   const n = await bubbles.count();
-  if (n >= 2) {
+  if (n >= 1) {
     const last = await bubbles.nth(n - 1).textContent();
     if (last && last.trim().length > 20) {
       reply = last.trim().slice(0, 60);
