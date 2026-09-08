@@ -5,11 +5,12 @@
    Occasion looks · golden order · 101s · myths
    ============================================================ */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { looks, goldenOrder, face101, eye101, lip101, makeupMistakes, makeupMyths, toolCare, removalSteps, type OccasionLook, type Guide101 } from "@/data/makeup";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, MythCard, TimeChip, DotList } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
 import { LightbulbIcon, XIcon, CheckIcon, ClockIcon, BrushIcon, MirrorIcon } from "./../icons";
+import { useAurelia } from "@/lib/store";
 
 const ACCENT = "var(--cat-makeup)";
 
@@ -89,6 +90,7 @@ function OrderStep({ step, index, open, onToggle }: { step: (typeof goldenOrder)
 /* ---------- Tab ---------- */
 
 export function MakeupTab() {
+  const { focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
   const [look, setLook] = useState<OccasionLook | null>(null);
   const [guide, setGuide] = useState<Guide101 | null>(null);
@@ -108,6 +110,22 @@ export function MakeupTab() {
     setLook(null);
     setSheet({ id: `guide-${g.id}`, category: "makeup", eyebrow: "The 101", title: g.title, subtitle: g.intro.slice(0, 60) + "…", accent: ACCENT });
   };
+
+  /* deep-open from global search (e.g. "date night look") or from Home "For you" */
+  useEffect(() => {
+    if (focus?.category !== "makeup") return;
+    const id = focus.id;
+    const t = setTimeout(() => {
+      setFocus(null);      if (id.startsWith("look-")) {
+        const l = looks.find((x) => x.id === id.replace("look-", ""));
+        if (l) openLook(l);
+      } else if (id.startsWith("guide-")) {
+        const g = [face101, eye101, lip101].find((x) => x.id === id.replace("guide-", ""));
+        if (g) openGuide(g);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [focus]);
 
   const visibleOrder = showAllOrder ? goldenOrder : goldenOrder.slice(0, 6);
 

@@ -7,7 +7,7 @@
 
 import { ReactNode, useCallback, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
-import { tabIcons, SunIcon, MoonIcon, HeartIcon, SparkleIcon } from "./icons";
+import { tabIcons, SunIcon, MoonIcon, HeartIcon, SparkleIcon, SearchIcon } from "./icons";
 import { useAurelia, type TabId } from "@/lib/store";
 
 const tabs: { id: TabId; label: string }[] = [
@@ -39,10 +39,12 @@ export function useTheme() {
 export function Shell({
   children,
   onOpenSaved,
+  onOpenSearch,
   savedCount,
 }: {
   children: ReactNode;
   onOpenSaved: () => void;
+  onOpenSearch: () => void;
   savedCount: number;
 }) {
   const { dark, toggle } = useTheme();
@@ -63,6 +65,13 @@ export function Shell({
               <span className="font-display italic text-[19px] leading-none text-ink pt-0.5">Aurelia</span>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                aria-label="Search tips, colors, looks"
+                onClick={onOpenSearch}
+                className="tap-target press grid place-items-center w-10 h-10 rounded-full text-ink-3 hover:text-ink hover:bg-surface-muted transition-colors"
+              >
+                <SearchIcon width={19} height={19} />
+              </button>
               <button
                 aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
                 onClick={toggle}

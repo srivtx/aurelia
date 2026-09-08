@@ -5,7 +5,7 @@
    Skin type quiz · type guides · ingredients · myths
    ============================================================ */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   skinTypes,
@@ -22,8 +22,9 @@ import {
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, MythCard, DotList, DoBlock, DontBlock } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
 import { QuizIllustration } from "./../illustrations";
-import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon } from "./../icons";
-import { useAurelia } from "@/lib/store";
+import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon } from "./../icons";
+import { useAurelia, todayKey } from "@/lib/store";
+import { shareCard } from "@/lib/share";
 
 const ACCENT = "var(--cat-skin)";
 
@@ -33,6 +34,7 @@ function QuizFlow({ onFinish, stored }: { onFinish: (r: { base: SkinTypeId; sens
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
+  const { showToast } = useAurelia();
   const total = quizQuestions.length;
 
   const result = useMemo(() => {
@@ -93,6 +95,22 @@ function QuizFlow({ onFinish, stored }: { onFinish: (r: { base: SkinTypeId; sens
               className="flex-1 h-11 rounded-full bg-cat-skin text-white text-[14px] font-bold press"
             >
               Save my result
+            </button>
+            <button
+              aria-label="Share your skin type result"
+              onClick={async () => {
+                const res = await shareCard({
+                  eyebrow: "Skin quiz result",
+                  title: `${type.name} skin`,
+                  subtitle: result.sensitiveOverlay ? "+ a sensitive side — patch test everything" : type.snapshot.slice(0, 110),
+                  swatches: ["#7FA08C", "#9DBBA6", "#DCEAE1"],
+                  text: `My skin type is ${type.name} — found via Aurelia ✦`,
+                });
+                if (res === "copied") showToast("Result copied ✦");
+              }}
+              className="h-11 w-11 rounded-full border border-line text-ink-2 press grid place-items-center shrink-0"
+            >
+              <ShareIcon width={19} height={19} />
             </button>
             <button
               onClick={() => {
@@ -185,6 +203,120 @@ function QuizFlow({ onFinish, stored }: { onFinish: (r: { base: SkinTypeId; sens
   );
 }
 
+/* ---------- Daily routine checklist (retention engine) ---------- */
+
+function ProgressRing({ done, total, color }: { done: number; total: number; color: string }) {
+  const r = 15.5;
+  const c = 2 * Math.PI * r;
+  const pct = total ? done / total : 0;
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" className="shrink-0" aria-hidden>
+      <circle cx="20" cy="20" r={r} fill="none" stroke="var(--surface-deep)" strokeWidth="4" />
+      <circle
+        cx="20"
+        cy="20"
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - pct)}
+        style={{ transition: "stroke-dashoffset 0.35s cubic-bezier(0,0,0.2,1)" }}
+      />
+      <text x="20" y="21" textAnchor="middle" dominantBaseline="middle" fontSize="11.5" fontWeight="700" fill="var(--ink-2)">
+        {done}/{total}
+      </text>
+    </svg>
+  );
+}
+
+function RoutineSlot({
+  slot,
+  steps,
+  color,
+}: {
+  slot: "am" | "pm";
+  steps: string[];
+  color: string;
+}) {
+  const { routine, toggleRoutine } = useAurelia();
+  const doneIdx = routine.date === todayKey() ? routine[slot] : [];
+  const done = doneIdx.length;
+  return (
+    <div className="bg-surface-muted rounded-[16px] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="grid place-items-center w-7 h-7 rounded-full" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
+            {slot === "am" ? <SunriseIcon width={15} height={15} /> : <MoonStarIcon width={15} height={15} />}
+          </span>
+          <p className="text-[14px] font-bold text-ink">{slot === "am" ? "Morning" : "Evening"}</p>
+        </div>
+        <ProgressRing done={done} total={steps.length} color={color} />
+      </div>
+      <div className="space-y-1.5">
+        {steps.map((s, i) => {
+          const checked = doneIdx.includes(i);
+          return (
+            <button
+              key={i}
+              role="checkbox"
+              aria-checked={checked}
+              aria-label={`${slot === "am" ? "Morning" : "Evening"} step ${i + 1}: ${s}`}
+              onClick={() => toggleRoutine(slot, i)}
+              className={`w-full text-left flex items-start gap-2.5 rounded-[12px] p-2.5 press transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose/40 hover:bg-surface`}
+            >
+              <span
+                className={`shrink-0 grid place-items-center w-5 h-5 rounded-full mt-0.5 border transition-all ${
+                  checked ? "bg-cat-skin border-cat-skin text-white" : "border-line-soft"
+                }`}
+              >
+                {checked && <CheckIcon width={11} height={11} strokeWidth={2.6} />}
+              </span>
+              <p className={`text-[13px] leading-[18px] ${checked ? "text-ink-3 line-through decoration-1 decoration-ink-400/70" : "text-ink-2"}`}>{s}</p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RoutineChecklist() {
+  const { skinResult, profile } = useAurelia();
+  const effective = (skinResult?.base ?? profile?.skinType ?? null) as SkinTypeId | null;
+  const type = effective ? skinTypeById(effective) : null;
+
+  if (!type) {
+    return (
+      <Card className="p-5 bg-[linear-gradient(150deg,var(--sage-soft),var(--surface)_70%)]">
+        <Eyebrow color={ACCENT}>Daily routine tracker</Eyebrow>
+        <p className="text-[14px] leading-[21px] text-ink-2 mt-2">
+          Take the 2-minute quiz (or tell us in setup) and your AM/PM routine becomes a daily checklist — steps you can tick off, resetting fresh each day.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3.5">
+        <div>
+          <Eyebrow color={ACCENT}>Your daily checklist</Eyebrow>
+          <p className="text-[15px] font-bold text-ink mt-1">
+            {type.name} skin{skinResult?.sensitiveOverlay ? " + sensitive" : ""}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        <RoutineSlot slot="am" steps={type.amRoutine} color={ACCENT} />
+        <RoutineSlot slot="pm" steps={type.pmRoutine} color="var(--cat-makeup)" />
+      </div>
+      <p className="text-[11.5px] text-ink-3 mt-3">Checks reset every morning ✦ consistency beats 12 steps.</p>
+    </Card>
+  );
+}
+
 /* ---------- Skin type card detail ---------- */
 
 function TypeDetail({ id }: { id: SkinTypeId }) {
@@ -265,7 +397,7 @@ function IngredientDetail({ ing }: { ing: (typeof ingredients)[0] }) {
 /* ---------- Tab ---------- */
 
 export function SkinTab() {
-  const { skinResult, setSkinResult } = useAurelia();
+  const { skinResult, setSkinResult, focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
   const [typeDetail, setTypeDetail] = useState<SkinTypeId | null>(null);
   const [ingDetail, setIngDetail] = useState<(typeof ingredients)[0] | null>(null);
@@ -281,6 +413,21 @@ export function SkinTab() {
     setSheet({ id: `ing-${ing.name}`, category: "skin", eyebrow: "Ingredient dictionary", title: ing.name, subtitle: ing.tagline, accent: ACCENT });
   };
 
+  /* deep-open from global search (e.g. "oily skin", "niacinamide") */
+  useEffect(() => {
+    if (focus?.category !== "skin") return;
+    const id = focus.id;
+    const t = setTimeout(() => {
+      setFocus(null);      if (id.startsWith("skin-")) {
+        openType(id.replace("skin-", "") as SkinTypeId);
+      } else if (id.startsWith("ing-")) {
+        const ing = ingredients.find((i) => i.name === id.replace("ing-", ""));
+        if (ing) openIng(ing);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [focus]);
+
   return (
     <div className="fade-in">
       <ScreenTitle eyebrow="Skincare" title="Know your skin" accent={ACCENT}>
@@ -293,6 +440,12 @@ export function SkinTab() {
           stored={skinResult as { base: string; sensitiveOverlay: boolean } | null}
           onFinish={(r) => setSkinResult(r)}
         />
+      </section>
+
+      {/* Daily routine checklist */}
+      <section className="mt-9">
+        <SectionHeader eyebrow="Every day" title="Routine checklist" accent={ACCENT} />
+        <RoutineChecklist />
       </section>
 
       {/* Universal routine */}

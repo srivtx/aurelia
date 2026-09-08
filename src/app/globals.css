@@ -128,7 +128,7 @@
 
   --ink-900: #f2e9e6;
   --ink-600: #c9bbb6;
-  --ink-400: #938378;
+  --ink-400: #a8978a;
 
   --cat-color: #d99272;
   --cat-makeup: #e095a7;
@@ -235,7 +235,8 @@
   }
 
   /* skeleton shimmer */
-  .shimmer {
+  .shimmer,
+  .skeleton {
     background: linear-gradient(90deg, var(--surface-deep) 25%, var(--surface-muted) 50%, var(--surface-deep) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.4s linear infinite;
@@ -243,6 +244,41 @@
   @keyframes shimmer {
     to {
       background-position: -200% 0;
+    }
+  }
+
+  /* hero: soft drifting glow */
+  .hero-card::before {
+    content: "";
+    position: absolute;
+    inset: -60% -30%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.35), transparent);
+    animation: hero-drift 9s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes hero-drift {
+    from {
+      transform: translate(-8%, -6%) scale(1);
+    }
+    to {
+      transform: translate(10%, 8%) scale(1.15);
+    }
+  }
+
+  /* gentle floating for decorative sparkles */
+  .floaty {
+    animation: floaty 3.2s ease-in-out infinite;
+  }
+  .floaty-2 {
+    animation: floaty 4.1s ease-in-out 0.6s infinite;
+  }
+  @keyframes floaty {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
     }
   }
 

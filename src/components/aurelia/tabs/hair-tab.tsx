@@ -5,12 +5,13 @@
    Outfit matcher · master styles · face shapes · quick fixes
    ============================================================ */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { masterStyles, outfitCategories, faceShapes, prepBasics, haircareTips, quickFixes, styleById, type HairStyle } from "@/data/hair";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, DifficultyChip, TimeChip, DotList } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
 import { outfitIcons, LightbulbIcon, ArrowRightIcon, CheckIcon } from "./../icons";
 import { hairstyleMinis, faceShapeIcons, EmptySavedIllustration } from "./../illustrations";
+import { useAurelia } from "@/lib/store";
 
 const ACCENT = "var(--cat-hair)";
 
@@ -79,6 +80,7 @@ function FaceShapeDetail({ shape }: { shape: (typeof faceShapes)[0] }) {
 /* ---------- Tab ---------- */
 
 export function HairTab() {
+  const { focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
   const [styleDetail, setStyleDetail] = useState<HairStyle | null>(null);
   const [shapeDetail, setShapeDetail] = useState<(typeof faceShapes)[0] | null>(null);
@@ -94,6 +96,25 @@ export function HairTab() {
     setStyleDetail(null);
     setSheet({ id: `shape-${s.id}`, category: "hair", eyebrow: "Face shape guide", title: `${s.name} face`, subtitle: "Flatter YOUR face", accent: ACCENT });
   };
+
+  /* deep-open from global search (e.g. "braid", "oval face") */
+  useEffect(() => {
+    if (focus?.category !== "hair") return;
+    const id = focus.id;
+    const t = setTimeout(() => {
+      setFocus(null);      if (id.startsWith("style-")) {
+        const s = styleById(id.replace("style-", ""));
+        if (s) openStyle(s);
+      } else if (id.startsWith("face-")) {
+        const f = faceShapes.find((x) => x.id === id.replace("face-", ""));
+        if (f) openShape(f);
+      } else if (id.startsWith("outfit-")) {
+        const cat = id.replace("outfit-", "");
+        if (outfitCategories.some((c) => c.id === cat)) setActiveCat(cat);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [focus]);
 
   const cat = outfitCategories.find((c) => c.id === activeCat)!;
 

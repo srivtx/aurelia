@@ -10,7 +10,12 @@
   "orientation": "portrait",
   "background_color": "#FAF7F3",
   "theme_color": "#FAF7F3",
-  "categories": ["beauty", "lifestyle", "fashion"],
+  "categories": ["beauty", "lifestyle", "fashion", "education"],
+  "lang": "en",
+  "dir": "ltr",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -35,6 +40,45 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Skin type quiz",
+      "short_name": "Quiz",
+      "description": "Find your skin type in 2 minutes",
+      "url": "/#/skin",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Color matcher",
+      "short_name": "Colors",
+      "description": "What goes with what",
+      "url": "/#/colors",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Hair for your outfit",
+      "short_name": "Hair",
+      "description": "Match a hairstyle to today's outfit",
+      "url": "/#/hair",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Aurelia home — daily tip, palette of the day, your routine"
+    },
+    {
+      "src": "/screenshots/colors.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Color match engine — what goes with what"
     }
   ]
 }

@@ -5,7 +5,7 @@
    Spring: 320ms cubic-bezier(0.32,0.72,0,1) per DESIGN_BRIEF §5
    ============================================================ */
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { XIcon } from "./icons";
@@ -29,17 +29,56 @@ export function BottomSheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  /* ---- Android/browser back button closes the sheet instead of leaving the app.
+     Opening pushes a history entry; UI-close consumes it; popstate closes the sheet. ---- */
+  const pushedFor = useRef<string | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+  const sheetId = data?.id ?? null;
+
+  useEffect(() => {
+    if (sheetId && pushedFor.current !== sheetId) {
+      pushedFor.current = sheetId;
+      try {
+        window.history.pushState({ aureliaSheet: sheetId }, "");
+      } catch {
+        /* history blocked — sheet still works, just no back-close */
+      }
+    } else if (!sheetId && pushedFor.current) {
+      // closed via UI (drag/X/backdrop) — consume our pushed entry
+      pushedFor.current = null;
+      try {
+        window.history.back();
+      } catch {
+        /* noop */
+      }
+    }
+  }, [sheetId]);
+
+  useEffect(() => {
+    const onPop = () => {
+      if (pushedFor.current) {
+        pushedFor.current = null;
+        onCloseRef.current();
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   useEffect(() => {
     if (!data) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [data, onClose]);
+  }, [data]);
 
   if (typeof document === "undefined") return null;
 

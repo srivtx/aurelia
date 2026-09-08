@@ -333,3 +333,107 @@ export const SectionBlob = ({ color = "var(--primary-soft)", ...props }: P & { c
     />
   </svg>
 );
+
+/* ---------- Onboarding: girl greeting with mirror ---------- */
+
+export const OnboardingIllustration = (props: P) => (
+  <svg viewBox="0 0 220 180" fill="none" {...props}>
+    <path
+      d="M178 26c14 18 20 42 15 65-6 24-23 44-46 54-24 10-52 9-72-5-19-13-27-38-22-62 6-25 24-45 49-54 25-9 62-16 76 2Z"
+      fill="var(--rose-soft, #F6DDE3)"
+      opacity="0.45"
+    />
+    {/* girl */}
+    <path
+      d="M66 74c-3-14 4-28 17-33 13-5 29 0 35 12 5 11 3 25-3 34-4 6-10 10-16 11"
+      fill="var(--surface, #FFF)"
+      stroke="var(--ink-2, #5A4E46)"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <path d="M82 62c4 2 10 2 14 0" stroke="var(--ink-2, #5A4E46)" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+    <path d="M86 92c0 6 2 11 5 14M104 90c0 6-2 11-5 14" stroke="var(--ink-2, #5A4E46)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M56 128c5-11 15-18 27-18 6 0 11 1 16 4" stroke="var(--ink-2, #5A4E46)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M60 121c6-12 15-18 26-18s21 6 26 14v23H58v-16Z" fill="var(--terra-soft, #F7E9E0)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2" strokeLinejoin="round" />
+    {/* hair */}
+    <path
+      d="M64 76c-4-16 4-32 19-38 16-6 34-2 42 10 8 12 6 28-2 39-5 7-12 11-18 12"
+      fill="var(--rose-soft, #F6DDE3)"
+      stroke="var(--ink-2, #5A4E46)"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    {/* hand mirror held out */}
+    <path d="M108 112c10 0 18 4 22 10" stroke="var(--ink-2, #5A4E46)" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="142" cy="128" r="17" fill="var(--surface, #FFF)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2" />
+    <circle cx="142" cy="128" r="11" fill="var(--sage-soft, #DCEAE1)" opacity="0.8" />
+    <path d="M132 120c3-4 7-7 11-7" stroke="#FFF" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
+    <path d="M142 145v8" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.4" strokeLinecap="round" />
+    {/* sparkles */}
+    <path d="M36 44c1 4 2.6 5.6 6.6 6.6-4 1-5.6 2.6-6.6 6.6-1-4-2.6-5.6-6.6-6.6 4-1 5.6-2.6 6.6-6.6Z" fill="var(--accent, #D9A441)" opacity="0.9" />
+    <path d="M188 96c.9 3.6 2.3 5 6 5.9-3.7.9-5.1 2.3-6 5.9-.9-3.6-2.3-5-6-5.9 3.7-.9 5.1-2.3 6-5.9Z" fill="var(--primary, #A84A62)" opacity="0.7" />
+    <path d="M176 40c.7 2.8 1.8 3.9 4.6 4.6-2.8.7-3.9 1.8-4.6 4.6-.7-2.8-1.8-3.9-4.6-4.6 2.8-.7 3.9-1.8 4.6-4.6Z" fill="var(--cat-skin, #7FA08C)" opacity="0.8" />
+  </svg>
+);
+
+/* ---------- Search empty state: magnifier over swatches ---------- */
+
+export const SearchIllustration = (props: P) => (
+  <svg viewBox="0 0 160 140" fill="none" {...props}>
+    <path
+      d="M126 16c9 12 12 28 8 43-5 15-16 28-32 33-16 5-33 3-45-6-12-9-16-25-12-40 4-14 16-26 31-31 15-5 42-9 50 1Z"
+      fill="var(--terra-soft, #F7E9E0)"
+      opacity="0.5"
+    />
+    {/* swatch circles */}
+    <circle cx="46" cy="88" r="12" fill="var(--primary, #A84A62)" opacity="0.25" />
+    <circle cx="70" cy="96" r="10" fill="var(--secondary, #C97B58)" opacity="0.3" />
+    <circle cx="92" cy="90" r="11" fill="var(--cat-skin, #7FA08C)" opacity="0.3" />
+    <circle cx="60" cy="64" r="9" fill="var(--accent, #D9A441)" opacity="0.3" />
+    {/* magnifier */}
+    <circle cx="84" cy="56" r="24" fill="var(--surface, #FFF)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.4" />
+    <path d="M70 42c5-6 12-9 18-8" stroke="var(--rose-soft, #F6DDE3)" strokeWidth="4" strokeLinecap="round" opacity="0.9" />
+    <path d="m101 73 14 14" stroke="var(--ink-2, #5A4E46)" strokeWidth="3.2" strokeLinecap="round" />
+    {/* question dots inside lens */}
+    <circle cx="80" cy="54" r="2.4" fill="var(--ink-2, #5A4E46)" opacity="0.6" />
+    <circle cx="90" cy="54" r="2.4" fill="var(--ink-2, #5A4E46)" opacity="0.6" />
+    <path d="M80 62c4 2 8 2 11 0" stroke="var(--ink-2, #5A4E46)" strokeWidth="1.6" strokeLinecap="round" opacity="0.5" />
+    <path d="M28 34c.9 3.6 2.3 5 6 5.9-3.7.9-5.1 2.3-6 5.9-.9-3.6-2.3-5-6-5.9 3.7-.9 5.1-2.3 6-5.9Z" fill="var(--primary, #A84A62)" opacity="0.75" />
+  </svg>
+);
+
+/* ---------- 404: lost compact ---------- */
+
+export const NotFoundIllustration = (props: P) => (
+  <svg viewBox="0 0 180 160" fill="none" {...props}>
+    <path
+      d="M142 20c10 14 13 33 8 50-6 18-19 33-36 40-17 7-37 6-50-3-13-9-19-27-15-45 4-19 18-34 37-41 19-7 46-12 56-1Z"
+      fill="var(--primary-soft)"
+      opacity="0.45"
+    />
+    {/* compact case */}
+    <circle cx="84" cy="70" r="36" fill="var(--terra-soft, #F7E9E0)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" />
+    <circle cx="84" cy="70" r="26" fill="var(--surface, #FFF)" stroke="var(--ink-2, #5A4E46)" strokeWidth="2" />
+    <path d="M66 56c4-6 9-10 15-11" stroke="var(--rose-soft, #F6DDE3)" strokeWidth="4" strokeLinecap="round" opacity="0.9" />
+    {/* heart in the mirror */}
+    <path
+      d="M84 78s-9-5.4-9-10.4c0-2.4 1.9-4.3 4.2-4.3 1.2 0 2.3.6 2.9 1.5.6-.9 1.7-1.5 2.9-1.5 2.3 0 4.2 1.9 4.2 4.3 0 5-9 10.4-9 10.4Z"
+      fill="var(--primary, #A84A62)"
+      opacity="0.85"
+    />
+    <path d="M110 98l10 10" stroke="var(--ink-2, #5A4E46)" strokeWidth="2.2" strokeLinecap="round" />
+    {/* dashed wandering path */}
+    <path d="M28 128c12-8 20 6 32-2s18 8 30 0" stroke="var(--ink-2, #5A4E46)" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="2 8" opacity="0.55" />
+    <path d="M132 30c1 4 2.6 5.6 6.6 6.6-4 1-5.6 2.6-6.6 6.6-1-4-2.6-5.6-6.6-6.6 4-1 5.6-2.6 6.6-6.6Z" fill="var(--accent, #D9A441)" opacity="0.9" />
+    <path d="M40 32c.8 3 2 4.2 5 5-3 .8-4.2 2-5 5-.8-3-2-4.2-5-5 3-.8 4.2-2 5-5Z" fill="var(--primary, #A84A62)" opacity="0.7" />
+  </svg>
+);
+
+/* ---------- Update badge: sparkle ring (for toast) ---------- */
+
+export const SparkleRing = (props: P) => (
+  <svg viewBox="0 0 48 48" fill="none" {...props}>
+    <circle cx="24" cy="24" r="21" stroke="currentColor" strokeWidth="2" strokeDasharray="3 7" opacity="0.5" />
+    <path d="M24 13c1.3 5.5 3.5 7.7 9 9-5.5 1.3-7.7 3.5-9 9-1.3-5.5-3.5-7.7-9-9 5.5-1.3 7.7-3.5 9-9Z" fill="currentColor" />
+  </svg>
+);

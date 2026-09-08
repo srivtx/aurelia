@@ -1,5 +1,11 @@
 "use client";
 
+/* ============================================================
+   AURELIA — global store (zustand + persist)
+   Hydration-safe: skipHydration + manual rehydrate AFTER mount,
+   so the first client render always matches the server HTML.
+   ============================================================ */
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -13,15 +19,62 @@ export interface SavedItem {
   subtitle: string;
 }
 
+export interface Profile {
+  name: string;
+  skinType: string | null; // quick pick from onboarding (not the full quiz)
+  vibe: string | null; // "soft" | "classic" | "bold" | "playful"
+}
+
+export interface StreakState {
+  count: number;
+  lastVisit: string; // local YYYY-MM-DD
+}
+
+export interface RoutineChecks {
+  date: string; // local YYYY-MM-DD — resets daily
+  am: number[]; // completed step indexes
+  pm: number[];
+}
+
+export interface FocusTarget {
+  category: Category;
+  id: string; // deep-open target, e.g. "color-navy", "look-party"
+}
+
 interface AureliaState {
   tab: TabId;
   saved: SavedItem[];
   skinResult: { base: string; sensitiveOverlay: boolean } | null;
+  profile: Profile | null;
+  streak: StreakState | null;
+  routine: RoutineChecks;
+  focus: FocusTarget | null;
+  toast: { msg: string; actionLabel?: string; action?: () => void } | null;
   setTab: (tab: TabId) => void;
   toggleSaved: (item: SavedItem) => void;
   isSaved: (id: string) => boolean;
   setSkinResult: (r: { base: string; sensitiveOverlay: boolean } | null) => void;
+  setProfile: (p: Profile | null) => void;
+  touchStreak: () => void;
+  toggleRoutine: (slot: "am" | "pm", step: number) => void;
+  setFocus: (f: FocusTarget | null) => void;
+  showToast: (msg: string, actionLabel?: string, action?: () => void) => void;
+  hideToast: () => void;
 }
+
+/* local YYYY-MM-DD (never called during render — actions/effects only) */
+function localDay(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/* exported for read-only comparisons in components (safe: same value on any
+   same-day render; only differs across midnight, which is a benign re-render) */
+export const todayKey = () => localDay();
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const useAurelia = create<AureliaState>()(
   persist(
@@ -29,6 +82,11 @@ export const useAurelia = create<AureliaState>()(
       tab: "home",
       saved: [],
       skinResult: null,
+      profile: null,
+      streak: null,
+      routine: { date: "", am: [], pm: [] },
+      focus: null,
+      toast: null,
       setTab: (tab) => set({ tab }),
       toggleSaved: (item) =>
         set((state) => ({
@@ -38,11 +96,60 @@ export const useAurelia = create<AureliaState>()(
         })),
       isSaved: (id) => get().saved.some((s) => s.id === id),
       setSkinResult: (r) => set({ skinResult: r }),
+      setProfile: (p) => set({ profile: p }),
+      touchStreak: () => {
+        const today = localDay();
+        const s = get().streak;
+        if (s && s.lastVisit === today) return;
+        const y = new Date();
+        y.setDate(y.getDate() - 1);
+        const count = s && s.lastVisit === localDay(y) ? s.count + 1 : 1;
+        set({ streak: { count, lastVisit: today } });
+      },
+      toggleRoutine: (slot, step) => {
+        const today = localDay();
+        const r = get().routine;
+        const base = r.date === today ? r : { date: today, am: [], pm: [] };
+        const list = base[slot];
+        set({
+          routine: {
+            ...base,
+            [slot]: list.includes(step) ? list.filter((i) => i !== step) : [...list, step],
+          },
+        });
+      },
+      setFocus: (f) => set({ focus: f }),
+      showToast: (msg, actionLabel, action) => {
+        if (toastTimer) clearTimeout(toastTimer);
+        set({ toast: { msg, actionLabel, action } });
+        toastTimer = setTimeout(() => set({ toast: null }), 4200);
+      },
+      hideToast: () => {
+        if (toastTimer) clearTimeout(toastTimer);
+        set({ toast: null });
+      },
     }),
     {
       name: "aurelia-store",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ saved: state.saved, skinResult: state.skinResult }),
+      /* Never auto-rehydrate: the first client render must match SSR HTML. */
+      skipHydration: true,
+      partialize: (state) => ({
+        saved: state.saved,
+        skinResult: state.skinResult,
+        profile: state.profile,
+        streak: state.streak,
+        routine: state.routine,
+      }),
     }
   )
 );
+
+/* Convenience: hydrate the persisted state once, after mount. */
+export async function rehydrateStore(): Promise<void> {
+  try {
+    await useAurelia.persist.rehydrate();
+  } catch {
+    /* first run / storage blocked — defaults are fine */
+  }
+}

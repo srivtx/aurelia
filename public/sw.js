@@ -1,9 +1,10 @@
 /* Aurelia service worker — app shell + offline-first content */
-const VERSION = "aurelia-v1";
+const VERSION = "aurelia-v2";
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSETS = [
   "/",
   "/manifest.json",
+  "/og.png",
   "/icons/icon.svg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -15,8 +16,15 @@ self.addEventListener("install", (event) => {
     caches
       .open(SHELL_CACHE)
       .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+      .catch(() => {})
   );
+});
+
+/* allow the page to activate a waiting worker immediately */
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
@@ -26,7 +34,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith("aurelia-") && key !== VERSION && !key.startsWith(VERSION))
+            .filter((key) => key.startsWith("aurelia-") && !key.startsWith(VERSION))
             .map((key) => caches.delete(key))
         )
       )
@@ -41,7 +49,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Navigation requests: network first, fall back to cached shell (offline)
+  /* navigation: network-first with offline fallback to the shell */
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -50,14 +58,25 @@ self.addEventListener("fetch", (event) => {
           caches.open(SHELL_CACHE).then((cache) => cache.put("/", copy));
           return response;
         })
-        .catch(() => caches.match("/"))
+        .catch(() =>
+          caches.match("/").then(
+            (cached) =>
+              cached ||
+              new Response(
+                "<!doctype html><title>Aurelia</title><style>body{background:#FAF7F3;color:#2d2320;font-family:Georgia,serif;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center;padding:24px}</style><div><h1 style='font-size:26px;font-weight:600'>You're offline ✦</h1><p style='color:#5a4e46;max-width:320px;line-height:21px;font-size:14px'>Reconnect to keep exploring — your saved looks are safe on this device.</p></div>",
+                { headers: { "Content-Type": "text/html; charset=utf-8" } }
+              )
+          )
+        )
     );
     return;
   }
 
-  // Static assets: cache first (stale-while-revalidate)
+  /* static assets: cache-first (stale-while-revalidate) */
   if (
     url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/screenshots/") ||
+    url.pathname === "/og.png" ||
     url.pathname.startsWith("/_next/static/") ||
     url.pathname === "/manifest.json"
   ) {

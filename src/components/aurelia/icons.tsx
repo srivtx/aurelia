@@ -66,6 +66,66 @@ export const ScissorsIcon = (props: P) => (
 
 /* ---------- UI glyphs ---------- */
 
+export const SearchIcon = (props: P) => (
+  <svg {...base(props)}>
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="m15.5 15.5 4.5 4.5" />
+  </svg>
+);
+
+export const ShareIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5v11" />
+    <path d="m8 7.5 4-4 4 4" />
+    <path d="M5.5 12.5v6A1.5 1.5 0 0 0 7 20h10a1.5 1.5 0 0 0 1.5-1.5v-6" />
+  </svg>
+);
+
+export const FlameIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M12 3.2c.6 3-1 4.6-2.6 6.2C7.8 11 6.3 12.7 6.3 15.4a5.7 5.7 0 0 0 11.4 0c0-3.9-2.7-5.7-3.7-8.7-.3-1-1.1-2-2-3.5Z" />
+    <path d="M12 16.8c-1.2-.7-1.8-1.8-1.2-3.1.3.9 1 1.2 1.5 1.6" strokeWidth="1.3" />
+  </svg>
+);
+
+export const SunriseIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M12 4v2.5" />
+    <path d="M5.6 6.6 7.4 8.4M18.4 6.6 16.6 8.4" />
+    <path d="M8 17a4 4 0 0 1 8 0" />
+    <path d="M2.5 20.5h19" />
+    <path d="M5 17H2.5M21.5 17H19" />
+  </svg>
+);
+
+export const MoonStarIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5 7.6 7.6 0 1 0 19.5 14.5Z" />
+    <path d="M17.5 4.5c.4 1.6 1.1 2.3 2.7 2.7-1.6.4-2.3 1.1-2.7 2.7-.4-1.6-1.1-2.3-2.7-2.7 1.6-.4 2.3-1.1 2.7-2.7Z" strokeWidth="1.3" />
+  </svg>
+);
+
+export const UserIcon = (props: P) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="8" r="3.8" />
+    <path d="M4.8 20.2c.6-3.7 3.6-5.8 7.2-5.8s6.6 2.1 7.2 5.8" />
+  </svg>
+);
+
+export const PencilIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="m14.5 5.5 4 4L8 20H4v-4L14.5 5.5Z" />
+    <path d="m12.5 7.5 4 4" strokeWidth="1.3" />
+  </svg>
+);
+
+export const RefreshIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+    <path d="M20 4v4h-4" />
+  </svg>
+);
+
 export const HeartIcon = ({ filled, ...props }: P & { filled?: boolean }) => (
   <svg {...base(props)} fill={filled ? "currentColor" : "none"}>
     <path d="M12 20.3S4 15.6 4 9.9C4 7.2 6.1 5 8.7 5c1.4 0 2.6.7 3.3 1.7.7-1 1.9-1.7 3.3-1.7C17.9 5 20 7.2 20 9.9c0 5.7-8 10.4-8 10.4Z" strokeWidth={filled ? 0 : 1.8} />

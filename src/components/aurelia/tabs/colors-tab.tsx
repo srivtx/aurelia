@@ -5,7 +5,7 @@
    Matching engine · palettes · undertone finder · theory
    ============================================================ */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   wardrobeColors,
   palettes,
@@ -22,7 +22,9 @@ import {
 } from "@/data/colors";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, DotList, StepRow } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
-import { LightbulbIcon, AlertIcon, ArrowRightIcon } from "./../icons";
+import { LightbulbIcon, AlertIcon, ArrowRightIcon, ShareIcon } from "./../icons";
+import { useAurelia } from "@/lib/store";
+import { shareText } from "@/lib/share";
 
 const ACCENT = "var(--cat-colors)";
 
@@ -133,6 +135,7 @@ function PaletteDetail({ palette }: { palette: Palette }) {
 function UndertoneFinder({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
+  const { showToast } = useAurelia();
   const done = step >= undertoneQuiz.length;
   const result = useMemo(() => {
     if (!done) return null;
@@ -210,6 +213,19 @@ function UndertoneFinder({ onClose }: { onClose: () => void }) {
                 Retake
               </button>
               <button
+                aria-label="Share your undertone result"
+                onClick={async () => {
+                  const res = await shareText({
+                    title: `My undertone: ${result.name}`,
+                    text: `My undertone is ${result.name} — glow colors: ${result.glow.slice(0, 3).join(", ")}. Found via Aurelia ✦`,
+                  });
+                  if (res === "copied") showToast("Result copied ✦");
+                }}
+                className="h-11 w-11 rounded-full border border-line text-ink-2 press grid place-items-center shrink-0"
+              >
+                <ShareIcon width={19} height={19} />
+              </button>
+              <button
                 onClick={onClose}
                 className="flex-1 h-11 rounded-full bg-rose text-white text-[14px] font-bold press"
               >
@@ -226,6 +242,7 @@ function UndertoneFinder({ onClose }: { onClose: () => void }) {
 /* ---------- Tab ---------- */
 
 export function ColorsTab() {
+  const { focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
   const [sheetBody, setSheetBody] = useState<"color" | "palette" | "undertone" | "theory">("color");
   const [activeColor, setActiveColor] = useState<WardrobeColor | null>(null);
@@ -243,6 +260,29 @@ export function ColorsTab() {
     setSheetBody("palette");
     setSheet({ id: `palette-${p.id}`, category: "colors", eyebrow: "Outfit palette", title: p.name, subtitle: p.occasion, accent: ACCENT });
   };
+
+  /* deep-open from global search (e.g. "navy", "capsule neutrals") */
+  useEffect(() => {
+    if (focus?.category !== "colors") return;
+    const id = focus.id;
+    const t = setTimeout(() => {
+      setFocus(null);      if (id.startsWith("color-")) {
+        const c = colorById(id.replace("color-", ""));
+        if (c) openColor(c);
+      } else if (id.startsWith("palette-")) {
+        const p = palettes.find((x) => x.id === id.replace("palette-", ""));
+        if (p) openPalette(p);
+      } else if (id.startsWith("theory-")) {
+        const s = theorySchemes.find((x) => x.id === id.replace("theory-", ""));
+        if (s) {
+          setActiveTheory(s);
+          setSheetBody("theory");
+          setSheet({ id: `theory-${s.id}`, category: "colors", eyebrow: "Color theory", title: s.name, subtitle: s.tagline, accent: ACCENT });
+        }
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [focus]);
 
   return (
     <div className="fade-in">
