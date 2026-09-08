@@ -37,8 +37,7 @@ src/
     globals.css           # "Soft Editorial" design tokens (light + dark) — THE source of color truth
     error.tsx / global-error.tsx / not-found.tsx   # branded error & 404 boundaries
     api/
-      stylist/route.ts    # AI chat: multi-provider, NDJSON token streaming, RAG grounding (keys live ONLY here)
-      models/route.ts     # provider/model discovery for the in-app picker
+      stylist/route.ts    # AI chat: server-side provider resolution, NDJSON token streaming, RAG grounding (keys live ONLY here)
   components/aurelia/
     shell.tsx             # blur header + 5-tab bottom nav (layoutId pill)
     bits.tsx              # Card, Chip, Eyebrow, SectionHeader, SaveButton, Do/Dont…
@@ -46,7 +45,7 @@ src/
     icons.tsx             # ALL line icons (24px grid, currentColor — stroke follows text color)
     illustrations.tsx     # ALL illustrations (line art + soft fills, CSS-var colors → dark-mode aware)
     markdown.tsx          # markdown-lite renderer for chat replies (XSS-safe, no deps)
-    stylist-chat.tsx      # full-screen chat: streaming, model picker, quick prompts
+    stylist-chat.tsx      # full-screen chat: streaming, quick prompts (NO provider/model UI — server-side only)
     platform-bridge.tsx   # WebMCP registration · storage persistence · badge · share-target handoff
     search-sheet.tsx      # global search with relevance grouping + deep-opens
     onboarding.tsx        # 3-step first-run (name / skin / vibe)
@@ -183,7 +182,8 @@ bunx tsc --noEmit                  # typecheck (src/ is clean)
 node scripts/hydration-verify.mjs  # 0 hydration errors
 node scripts/e2e-new-features.mjs  # onboarding, routes, search, share, PWA files
 node scripts/e2e-deep-tech.mjs     # season wizard, outfit lab, conflicts, face meter, stylist
-node scripts/e2e-chat-fixes.mjs    # markdown rendering, chat contrast, model picker, dark tokens
+node scripts/e2e-chat-fixes.mjs    # markdown rendering, chat contrast, dark tokens, no-provider-leak
+node scripts/check-providers.mjs   # operator: verify AI provider keys + resolution (replaces /api/models)
 bun run build                      # production build
 ```
 

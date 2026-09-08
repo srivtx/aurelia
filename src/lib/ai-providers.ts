@@ -3,11 +3,17 @@
    Free / OpenAI-compatible providers behind /api/stylist.
 
    Design decisions (docs/RESEARCH-DEEPTECH.md §2):
-   - Model IDs churn quarterly → live discovery via GET {base}/models
-     with a 10-min in-memory cache, curated fallbacks if discovery fails.
+   - The END USER never sees or chooses a provider — that is an
+     operator concern. The server resolves the provider from env
+     (AI_PROVIDER pin, or auto-detect the first configured free
+     tier), with the built-in model as the always-available floor.
+   - If an external provider hiccups (429 / 401 / network), the
+     route silently falls back to the built-in model so the chat
+     never breaks for the user.
    - All providers speak the OpenAI Chat Completions wire format.
-   - Keys NEVER leave the server. The client only sees provider ids,
-     model ids and display labels.
+   - Keys NEVER leave the server. No provider or model ids are
+     exposed to the client — not in UI, not in API responses.
+   - Operators verify their setup with `node scripts/check-providers.mjs`.
    ============================================================ */
 
 export interface ProviderDef {
@@ -16,12 +22,10 @@ export interface ProviderDef {
   blurb: string;
   baseUrl: string;
   keyEnv: string; // env var that unlocks this provider
-  keyUrl: string; // where a user gets a key
+  keyUrl: string; // where an operator gets a key
   freeNote: string;
-  curated: { id: string; label: string; note?: string }[]; // fallback when discovery fails / not configured
+  curated: { id: string; label: string; note?: string }[]; // default model order
   headers?: Record<string, string>;
-  /* filter live /models list down to chat-capable models */
-  pick?: (ids: string[]) => string[];
 }
 
 export interface ModelInfo {
@@ -29,23 +33,7 @@ export interface ModelInfo {
   label: string;
   note?: string;
 }
-
-export interface ProviderStatus extends ProviderDef {
-  configured: boolean;
-  models: ModelInfo[];
-  live: boolean; // models came from the provider's live API
-}
-
-/* prettify "openai/gpt-oss-120b" → "GPT-OSS 120B" */
-function prettyModelLabel(id: string): string {
-  const tail = id.includes("/") ? id.split("/").slice(-1)[0] : id;
-  return tail
-    .split(/[-_]/)
-    .map((p) => (p === "3" || /^\d/.test(p) ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1)))
-    .join(" ")
-    .replace(/\bIt\b/, "IT")
-    .replace(/\bB\b$/, "B");
-}
+/* ModelInfo: shape used by scripts/check-providers.mjs output — kept for future server tooling. */
 
 const providers: ProviderDef[] = [
   {
@@ -72,13 +60,6 @@ const providers: ProviderDef[] = [
       { id: "qwen/qwen3.6-27b", label: "Qwen 3.6 27B" },
       { id: "groq/compound", label: "Groq Compound", note: "Agentic + tools" },
     ],
-    /* production chat models only — drop whisper/tts/guard/embed/rerank */
-    pick: (ids) =>
-      ids.filter(
-        (m) =>
-          !/whisper|tts|guard|embed|rerank|distil|safeguard|playai|preview/i.test(m) ||
-          /gpt-oss|qwen|compound|kimi|llama/i.test(m)
-      ),
   },
   {
     id: "gemini",
@@ -93,7 +74,6 @@ const providers: ProviderDef[] = [
       { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", note: "Fastest" },
       { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
     ],
-    pick: (ids) => ids.filter((m) => /^gemini/i.test(m) && !/embedding|image|tts|native|audio|learnlm/i.test(m)),
   },
   {
     id: "openrouter",
@@ -108,8 +88,6 @@ const providers: ProviderDef[] = [
       { id: "nvidia/nemotron-3.5-lightning:free", label: "Nemotron Lightning", note: "Free · 1M context" },
       { id: "liquid/lfm-2.5-2.6b:free", label: "LFM 2.5", note: "Free · tiny" },
     ],
-    /* the free pool rotates — anything with :free works */
-    pick: (ids) => ids.filter((m) => m.endsWith(":free")),
     headers: { "X-Title": "Aurelia" },
   },
   {
@@ -163,69 +141,49 @@ function baseUrlOf(p: ProviderDef): string {
   return p.baseUrl.replace(/\/$/, "");
 }
 
-/* ---------- live model discovery (cached 10 min) ---------- */
+/* ---------- server-side provider resolution ---------- */
 
-interface CacheEntry {
-  at: number;
-  models: ModelInfo[];
-}
-const modelCache = new Map<string, CacheEntry>();
-const CACHE_MS = 10 * 60 * 1000;
-const MAX_MODELS = 12;
-
-async function discoverModels(p: ProviderDef): Promise<ModelInfo[]> {
-  if (p.id === "zai" || p.id === "custom") return [];
-  const base = baseUrlOf(p);
-  const key = process.env[p.keyEnv] ?? "";
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 6000);
-    const res = await fetch(`${base}/models`, {
-      headers: { Authorization: `Bearer ${key}`, ...(p.headers ?? {}) },
-      signal: ctrl.signal,
-      cache: "no-store",
-    });
-    clearTimeout(timer);
-    if (!res.ok) return [];
-    const json = (await res.json()) as { data?: { id?: string }[] };
-    let ids = (json.data ?? []).map((m) => m.id ?? "").filter(Boolean);
-    if (p.pick) ids = p.pick(ids);
-    /* de-dup, keep deterministic order (sort by id) */
-    ids = [...new Set(ids)].sort();
-    return ids.slice(0, MAX_MODELS).map((id) => ({ id, label: prettyModelLabel(id) }));
-  } catch {
-    return [];
-  }
+export interface ResolvedLLM {
+  def: ProviderDef;
+  model: string; // "" only possible for misconfigured custom
+  pinned: boolean; // operator pinned via AI_PROVIDER (vs auto-detect)
 }
 
-export async function providerStatus(): Promise<ProviderStatus[]> {
-  const out: ProviderStatus[] = [];
-  for (const p of providers) {
-    const configured = isConfigured(p);
-    let models: ModelInfo[] = [];
-    let live = false;
-    if (p.id === "zai") {
-      models = p.curated;
-    } else if (p.id === "custom") {
-      const m = process.env.AI_MODEL;
-      models = m ? [{ id: m, label: prettyModelLabel(m) }] : [];
-    } else if (configured) {
-      const cached = modelCache.get(p.id);
-      if (cached && Date.now() - cached.at < CACHE_MS) {
-        models = cached.models;
-        live = models.length > 0;
-      } else {
-        const found = await discoverModels(p);
-        modelCache.set(p.id, { at: Date.now(), models: found });
-        models = found;
-        live = found.length > 0;
-      }
+/* Auto-detection priority: best free tiers first. The built-in model
+   is always the floor — resolveProvider() never fails. */
+const AUTO_PRIORITY = ["groq", "gemini", "openrouter", "cerebras", "mistral", "custom"];
+
+function modelFor(def: ProviderDef): string {
+  const pinned = (process.env.AI_MODEL ?? "").trim();
+  if (pinned) return pinned;
+  if (def.id === "custom") return (process.env.AI_MODEL ?? "").trim();
+  return def.curated[0]?.id ?? "";
+}
+
+/* Decide which provider + model this deployment serves. ENV contract:
+   - AI_PROVIDER: pin one provider id (groq|gemini|openrouter|cerebras|mistral|custom|zai)
+   - AI_MODEL:    pin a specific model id at that provider (optional)
+   - otherwise:   first provider with a key present (AUTO_PRIORITY), else built-in. */
+export function resolveProvider(): ResolvedLLM {
+  const pinnedId = (process.env.AI_PROVIDER ?? "").trim().toLowerCase();
+  if (pinnedId) {
+    const def = providerById(pinnedId);
+    if (def && isConfigured(def)) {
+      const model = modelFor(def);
+      if (model) return { def, model, pinned: true };
+      console.warn(`[ai-providers] AI_PROVIDER=${pinnedId} has no model (set AI_MODEL) — auto-selecting`);
+    } else {
+      console.warn(`[ai-providers] AI_PROVIDER=${pinnedId} is not configured (missing key env) — auto-selecting`);
     }
-    /* merge: live models, plus curated ones that still exist live or as fallback */
-    if (!models.length) models = p.curated.map((c) => ({ ...c }));
-    out.push({ ...p, configured, models, live });
   }
-  return out;
+  for (const id of AUTO_PRIORITY) {
+    const def = providerById(id);
+    if (def && isConfigured(def)) {
+      const model = modelFor(def);
+      if (model) return { def, model, pinned: false };
+    }
+  }
+  return { def: providerById("zai")!, model: "aurelia-default", pinned: false };
 }
 
 /* ---------- completion call (OpenAI-compatible, streaming) ---------- */
@@ -294,5 +252,3 @@ export async function* sseDeltas(res: Response): AsyncGenerator<string> {
     }
   }
 }
-
-export const prettyLabel = prettyModelLabel;

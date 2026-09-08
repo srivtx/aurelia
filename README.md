@@ -20,7 +20,7 @@ Aurelia is an installable, offline-capable Progressive Web App built with Next.j
 - **Makeup** — five occasion looks with step-by-step instructions, the 12-step application order, face/eye/lip 101 guides, common mistakes, and tool care.
 - **Skincare** — a 10-question skin-type quiz, a daily AM/PM routine checklist, an ingredient dictionary, mixing rules, and the **Ingredient Lab** — an evidence-based conflict/synergy matrix with an AM/PM routine sequencer (pH-ordered, thin→thick, SPF last).
 - **Hair** — hairstyles matched to eight outfit categories, ten master styles, face-shape guides, and the **Face Meter** — an anthropometric ratio classifier (length/cheekbone, forehead and jaw taper) with a live-morphing SVG face preview.
-- **Ask Aurelia** — an AI stylist chat with **token-by-token streaming**, markdown-rendered replies, knowledge-grounded answers (RAG over the app's own content), and a **model picker**: bring a free key from Groq, Google Gemini, OpenRouter, Cerebras, Mistral, or point it at any local OpenAI-compatible server (Ollama/LM Studio). The built-in cloud model needs no key.
+- **Ask Aurelia** — an AI stylist chat with **token-by-token streaming**, markdown-rendered replies, and knowledge-grounded answers (RAG over the app's own content). The model behind her is a **server-side decision**: operators plug in a free key from Groq, Google Gemini, OpenRouter, Cerebras, Mistral, or a local LLM (Ollama/LM Studio) via env vars — users never see or choose a provider, and the built-in cloud model is the always-on fallback.
 - **Agent-ready (WebMCP)** — the color-science, season, routine, conflict and search engines are registered as **read-only MCP tools** (`document.modelContext`), so your browser/desktop AI agent (ChatGPT site tools, Chrome/Edge trials) can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge` and `compare_colors` directly against the live page.
 - **Share-to-Analyze** — on Android, share any image from anywhere into Aurelia (installed PWA) and the on-device palette analyzer runs on it; on desktop, "Open with Aurelia" via file handlers. Nothing is uploaded, ever.
 - **Beauty Passport** — your profile (season, skin type, vibe) as a portable JSON file you own: export, share, import on another device.
@@ -70,7 +70,8 @@ Optional verification scripts (Playwright, installed globally):
 node scripts/hydration-verify.mjs   # hydration check under a non-UTC timezone with persisted state
 node scripts/e2e-new-features.mjs   # end-to-end pass over onboarding, search, routing, 404
 node scripts/e2e-deep-tech.mjs      # Color Lab, Ingredient Lab, Face Meter, AI stylist + hydration watch
-node scripts/e2e-chat-fixes.mjs     # chat markdown, contrast, model picker, dark-mode tokens
+node scripts/e2e-chat-fixes.mjs     # chat markdown, contrast, dark-mode tokens, provider-leak check
+node scripts/check-providers.mjs    # operator: verify AI provider keys + server-side resolution
 ```
 
 ## Deployment
@@ -119,12 +120,13 @@ Everything a contributor needs is preserved in [`docs/`](docs/):
 ```
 src/
   app/                        # root layout, page (tab router), 404, error boundaries,
-                              # /api/stylist (multi-provider streaming + RAG), /api/models
+                              # /api/stylist (server-side multi-provider streaming + RAG)
   components/aurelia/         # shell, bottom sheet, UI primitives, icons, illustrations,
-                              # onboarding, search overlay, stylist chat (streaming + model
-                              # picker), markdown renderer, platform bridge (WebMCP/badge/
-                              # share-target), season analysis, outfit lab, photo analyzer,
-                              # ingredient lab, face meter, beauty passport
+                              # onboarding, search overlay, stylist chat (streaming —
+                              # provider invisible to users), markdown renderer,
+                              # platform bridge (WebMCP/badge/share-target), season analysis,
+                              # outfit lab, photo analyzer, ingredient lab, face meter,
+                              # beauty passport
   components/aurelia/tabs/    # home, colors, makeup, skin, hair
   data/                       # content knowledge base (colors, makeup, skincare, hair,
                               # tips, 12 seasons, active ingredients)

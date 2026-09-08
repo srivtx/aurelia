@@ -170,3 +170,25 @@ Stage Summary:
 - Lint clean; tsc src/ clean; production build success
 - /api/models live: zai configured, others show actionable key hints; /api/stylist streams NDJSON; unconfigured provider → clear 400 with needsKey/keyUrl
 - Ready to push as srivtx
+
+---
+Task ID: 3
+Agent: main
+Task: Make AI provider/model a server-side-only decision (remove client picker) + push
+
+Work Log:
+- Removed ModelPickerSheet, model pill, /api/models fetch, aiModel store state (store.ts + stylist-chat.tsx)
+- ai-providers.ts: replaced live model discovery (providerStatus/discoverModels) with resolveProvider() — env-driven: AI_PROVIDER pin, AI_MODEL pin, else auto-detect first configured key (groq→gemini→openrouter→cerebras→mistral→custom), else built-in zai
+- /api/stylist: server resolves provider (client model field ignored); external failure (429/401/network) → SILENT fallback to built-in model; user-facing errors generic (no provider names); done event no longer carries provider/model
+- Deleted public /api/models route (404 now) — provider identity never exposed over HTTP
+- Added scripts/check-providers.mjs (operator-only: resolves env, live-pings provider keys) — replaces /api/models verification
+- Docs updated: DEPLOYMENT.md §2 rewritten (server-side routing, AI_PROVIDER/AI_MODEL contract, check script, Ollama example), troubleshooting + security notes; README (Ask Aurelia feature, scripts, structure); CONTEXT.md (structure, scripts)
+- .env: untracked (no secrets, just DATABASE_URL); .env.example force-added to repo (template for operators)
+- e2e-chat-fixes.mjs updated: picker tests → no-provider-leak tests (no picker button, no provider names in UI, /api/models 404)
+
+Stage Summary:
+- bun run lint: clean; bun run build: success (routes: /, /_not-found, /api, /api/stylist — models gone)
+- e2e-chat-fixes: 22/22 (markdown render, input contrast, light icon, dark SVGs, no provider leak, no hydration errors)
+- hydration-verify: 0 errors; e2e-deep-tech: all pass incl. stylist reply
+- check-providers.mjs: resolves zai (no keys in env) — works
+- User-facing design: end users never see which AI provider serves them; operators configure via env (docs/DEPLOYMENT.md)

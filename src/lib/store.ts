@@ -46,12 +46,6 @@ export interface FocusTarget {
   id: string; // deep-open target, e.g. "color-navy", "look-party"
 }
 
-export interface AIModelChoice {
-  provider: string; // "zai" | "groq" | "gemini" | …
-  id: string; // model id at that provider
-  label: string; // pretty label for UI
-}
-
 interface AureliaState {
   tab: TabId;
   saved: SavedItem[];
@@ -75,8 +69,6 @@ interface AureliaState {
   hideToast: () => void;
   stylistOpen: boolean;
   setStylistOpen: (b: boolean) => void;
-  aiModel: AIModelChoice | null;
-  setAiModel: (m: AIModelChoice | null) => void;
 }
 
 /* local YYYY-MM-DD (never called during render — actions/effects only) */
@@ -106,7 +98,6 @@ export const useAurelia = create<AureliaState>()(
       focus: null,
       toast: null,
       stylistOpen: false,
-      aiModel: null,
       setTab: (tab) => set({ tab }),
       toggleSaved: (item) =>
         set((state) => ({
@@ -141,7 +132,6 @@ export const useAurelia = create<AureliaState>()(
       },
       setFocus: (f) => set({ focus: f }),
       setStylistOpen: (b) => set({ stylistOpen: b }),
-      setAiModel: (m) => set({ aiModel: m }),
       showToast: (msg, actionLabel, action) => {
         if (toastTimer) clearTimeout(toastTimer);
         set({ toast: { msg, actionLabel, action } });
@@ -164,7 +154,6 @@ export const useAurelia = create<AureliaState>()(
         profile: state.profile,
         streak: state.streak,
         routine: state.routine,
-        aiModel: state.aiModel,
       }),
     }
   )

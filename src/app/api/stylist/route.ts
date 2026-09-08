@@ -1,21 +1,27 @@
 /* ============================================================
    AURELIA — AI Stylist API (server-side only)
-   Multi-provider: built-in z-ai SDK + any OpenAI-compatible
-   provider (Groq / Gemini / OpenRouter / Cerebras / Mistral /
-   custom). Streams NDJSON events so the chat renders replies
-   progressively:
+
+   The END USER never sees which provider/model serves them —
+   that is an operator concern, resolved here from env vars
+   (AI_PROVIDER / AI_MODEL / *_API_KEY — see docs/DEPLOYMENT.md):
+     1. resolveProvider() picks the deployment's provider + model.
+     2. If an external provider fails (429 / 401 / network), the
+        route silently falls back to the built-in Aurelia Cloud
+        model so the chat never breaks for the user.
+   Streams NDJSON events so the chat renders replies progressively:
      {"delta":"partial text"}
-     {"done":true,"provider":"groq","model":"openai/gpt-oss-120b"}
+     {"done":true}
      {"error":"message"}            (fatal, mid-stream)
    Pre-stream failures return classic JSON {error} + status.
    The system prompt is grounded (RAG-lite) in the app's own
    knowledge base and personalized with the user's zero-party
-   profile. Keys never leave this route.
+   profile. Keys and provider identities never leave this route —
+   every user-facing error message is provider-agnostic.
    ============================================================ */
 
 import { NextResponse } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
-import { providerById, isConfigured, openAICompatibleStream, sseDeltas, prettyLabel, type ChatMsg } from "@/lib/ai-providers";
+import { resolveProvider, openAICompatibleStream, sseDeltas, type ChatMsg } from "@/lib/ai-providers";
 import { groundingBlock } from "@/lib/stylist-rag";
 
 export const runtime = "nodejs";
@@ -97,6 +103,16 @@ function streamResponse(lines: string[]): Response {
   });
 }
 
+/* Built-in Aurelia Cloud completion, emitted as a single delta. */
+async function builtinReply(system: string, messages: ChatMessage[]): Promise<string> {
+  const zai = await ZAI.create();
+  const completion = await zai.chat.completions.create({
+    messages: [{ role: "assistant", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
+    thinking: { type: "disabled" },
+  });
+  return completion.choices[0]?.message?.content ?? "";
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -115,71 +131,41 @@ export async function POST(req: Request) {
       vibe: typeof body?.context?.vibe === "string" ? body.context.vibe : null,
     };
 
-    /* ---- provider + model resolution ---- */
-    const requested: { provider?: string; id?: string } = body?.model ?? {};
-    const providerId = typeof requested.provider === "string" ? requested.provider : "zai";
-    const modelId = typeof requested.id === "string" ? requested.id : "";
-    const def = providerById(providerId);
-
-    if (!def) {
-      return NextResponse.json({ error: `Unknown provider "${providerId}"` }, { status: 400 });
-    }
-    if (!isConfigured(def)) {
-      const keyHint = def.keyEnv ? ` Set ${def.keyEnv} in your .env (see docs/DEPLOYMENT.md).` : "";
-      return NextResponse.json(
-        { error: `${def.label} is not configured on this server yet — Aurelia Cloud is always available.${keyHint}`, provider: providerId, needsKey: def.keyEnv, keyUrl: def.keyUrl },
-        { status: 400 }
-      );
-    }
-    const model = modelId || (def.id === "zai" ? "aurelia-default" : process.env.AI_MODEL && def.id === "custom" ? process.env.AI_MODEL : def.curated[0]?.id);
-    if (def.id !== "zai" && !model) {
-      return NextResponse.json({ error: `No model selected for ${def.label}` }, { status: 400 });
-    }
+    /* ---- provider + model resolution (SERVER decides; client input ignored) ---- */
+    const { def, model, pinned } = resolveProvider();
 
     /* ---- RAG grounding from the app's own knowledge base ---- */
     const grounding = groundingBlock(messages.filter((m) => m.role === "user").map((m) => m.content));
     const system = buildSystemPrompt(ctx, grounding);
 
-    const wire: ChatMsg[] = [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))];
-
     /* ---- Built-in provider: single completion, emitted as one delta ---- */
     if (def.id === "zai") {
-      const zai = await ZAI.create();
-      const completion = await zai.chat.completions.create({
-        messages: [
-          { role: "assistant", content: system },
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-        ],
-        thinking: { type: "disabled" },
-      });
-      const reply = completion.choices[0]?.message?.content ?? "";
+      const reply = await builtinReply(system, messages);
       if (!reply.trim()) {
         return NextResponse.json({ error: "The stylist is busy — try again in a moment ✦" }, { status: 502 });
       }
-      return streamResponse([ndjson({ delta: reply }), ndjson({ done: true, provider: "zai", model: "aurelia-default" })]);
+      return streamResponse([ndjson({ delta: reply }), ndjson({ done: true })]);
     }
 
-    /* ---- OpenAI-compatible providers: true token streaming ---- */
-    const upstreamRes = await openAICompatibleStream({ providerId: def.id, model, messages: wire, signal: req.signal });
-    if (!upstreamRes) {
-      return NextResponse.json({ error: `${def.label} could not start a stream — falling back to Aurelia Cloud.` }, { status: 502 });
+    /* ---- External provider: true token streaming with silent fallback ---- */
+    let upstreamRes: Response | null = null;
+    try {
+      upstreamRes = await openAICompatibleStream({ providerId: def.id, model, messages: [{ role: "system", content: system }, ...messages], signal: req.signal });
+    } catch (err) {
+      console.error(`[/api/stylist] ${def.id}/${model} stream start failed:`, err instanceof Error ? err.message : err);
+      upstreamRes = null;
     }
-    if (!upstreamRes.ok) {
-      const status = upstreamRes.status;
-      let detail = "";
+    if (!upstreamRes || !upstreamRes.ok) {
+      /* Operator-facing detail goes to the server log only. */
+      const status = upstreamRes?.status ?? 0;
+      console.error(`[/api/stylist] provider ${def.id}/${model} failed (status ${status || "network"}) — falling back to built-in model${pinned ? " (AI_PROVIDER was pinned)" : ""}`);
       try {
-        const errJson = await upstreamRes.json().catch(() => null);
-        detail = errJson?.error?.message ?? "";
-      } catch {
-        /* ignore */
+        const reply = await builtinReply(system, messages);
+        if (reply.trim()) return streamResponse([ndjson({ delta: reply }), ndjson({ done: true })]);
+      } catch (err) {
+        console.error("[/api/stylist] built-in fallback also failed:", err instanceof Error ? err.message : err);
       }
-      const msg =
-        status === 429
-          ? `${def.label} rate limit hit — retry in a moment or pick another model.`
-          : status === 401
-            ? `${def.label} rejected the key — check ${def.keyEnv}.`
-            : `${def.label} hiccup (${status})${detail ? `: ${String(detail).slice(0, 140)}` : ""} — try again.`;
-      return NextResponse.json({ error: msg, provider: def.id }, { status: 502 });
+      return NextResponse.json({ error: "The stylist is busy — try again in a moment ✦" }, { status: 502 });
     }
 
     const upstream = upstreamRes;
@@ -193,11 +179,20 @@ export async function POST(req: Request) {
             controller.enqueue(encoder.encode(ndjson({ delta })));
           }
           if (chars === 0) {
-            controller.enqueue(encoder.encode(ndjson({ error: `${def.label} returned an empty reply — try again or switch models.` })));
+            /* empty reply — try the built-in model before giving up */
+            try {
+              const reply = await builtinReply(system, messages);
+              if (reply.trim()) {
+                controller.enqueue(encoder.encode(ndjson({ delta: reply })));
+                controller.enqueue(encoder.encode(ndjson({ done: true })));
+                return;
+              }
+            } catch {
+              /* ignore — generic error below */
+            }
+            controller.enqueue(encoder.encode(ndjson({ error: "The stylist hiccuped — try again ✦" })));
           } else {
-            controller.enqueue(
-              encoder.encode(ndjson({ done: true, provider: def.id, model, label: prettyLabel(model) }))
-            );
+            controller.enqueue(encoder.encode(ndjson({ done: true })));
           }
         } catch {
           controller.enqueue(encoder.encode(ndjson({ error: "Stream interrupted — try again ✦" })));

@@ -1,10 +1,11 @@
-/* E2E: chat fixes + model picker + passport + dark-mode tokens + hydration regression
+/* E2E: chat fixes + provider-invisibility + passport + dark-mode tokens + hydration regression
    Verifies the exact bugs the user reported:
    1. raw markdown (** ** *) no longer shown as text in chat
    2. user query text visible (bubble bg + fg contrast — the old white-on-white)
    3. Ask Aurelia icon visible in LIGHT mode (var(--rose) now resolves)
    4. dark mode: illustrations use dark tokens (not light-locked)
-   5. model picker sheet lists providers
+   5. NO provider/model UI leaks to the client (server-side routing):
+      no picker button, no provider names, /api/models is gone
    6. Beauty Passport card present + exports
    7. 0 hydration errors (IST + persisted store)
 */
@@ -38,7 +39,6 @@ await page.addInitScript(() => {
         profile: { name: 'Maya', skinType: 'oily', vibe: 'soft' },
         streak: { count: 4, lastVisit: new Date().toISOString().slice(0, 10) },
         routine: { date: '', am: [], pm: [] },
-        aiModel: null,
       },
       version: 0,
     })
@@ -69,22 +69,17 @@ check(`Chat pill bg resolves (got "${pillBg}")`, pillBg !== 'rgba(0, 0, 0, 0)');
 check('home: Beauty Passport card', (await page.locator('text=Beauty Passport').count()) > 0);
 check('home: passport has Save + Import', (await page.locator('button:has-text("Import")').count()) > 0);
 
-/* ---------- 3. Open chat → send a message ---------- */
+/* ---------- 3. Open chat → NO provider UI anywhere ---------- */
 await page.click('button[aria-label="Open Ask Aurelia — your AI stylist"]');
 await page.waitForTimeout(800);
 check('chat opens (header present)', (await page.locator('text=Your pocket stylist').count()) > 0);
 
-/* model picker */
-await page.click('button[aria-label="Choose AI model"]');
-await page.waitForTimeout(1200);
-const picker = await page.locator('text=Choose the AI brain').count();
-check('model picker sheet opens', picker > 0);
-const providers = await page.locator('[role="dialog"] .grid:has-text("Aurelia Cloud"), [role="dialog"] div:has-text("Groq")').count();
-check('model picker lists Groq provider', (await page.locator('text=Groq').count()) > 0);
-check('model picker shows key hint', (await page.locator('text=GROQ_API_KEY').count()) > 0);
-await page.keyboard.press('Escape');
-await page.waitForTimeout(600);
-check('model picker closed via Escape', (await page.locator('text=Choose the AI brain').count()) === 0);
+check('no model picker button in chat header', (await page.locator('button[aria-label="Choose AI model"]').count()) === 0);
+const dialogText = await page.locator('[role="dialog"]').first().innerText().catch(() => '');
+check('no provider names visible in chat UI', !/groq|gemini|openrouter|cerebras|mistral|aurelia cloud/i.test(dialogText));
+const modelsRes = await page.request.get('http://localhost:3000/api/models').catch(() => null);
+const modelsStatus = modelsRes ? await modelsRes.status() : 0;
+check(`/api/models no longer exposed (status ${modelsStatus})`, modelsStatus === 404);
 
 /* input text visibility while typing */
 await page.fill('input[aria-label="Message Aurelia"]', 'What colors go with a forest-green dress?');
