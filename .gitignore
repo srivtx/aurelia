@@ -55,3 +55,4 @@ server.log
 # QA artifacts
 scripts/shot-*.png
 scripts/verify-*.png
+tool-results/
