@@ -81,3 +81,23 @@ Stage Summary:
 - P1: saved collections/boards, browsable tips library + seasonal rotation, GRWM step-player, 6 content additions (acne/face-shapes/brushes/hair-texture/jewelry/prints), Web Push
 - P2: photo→palette extraction, look builder, skin photo diary, glossary/trends pages
 - Key insight: Aurelia wins by "mentor in your pocket" (GlowUp 5-star language) + offline/no-ads/no-signup (offline-app listing claims), not AR; retention engine = checkable routines + shareable results
+
+---
+Task ID: 3
+Agent: main
+Task: Fix hydration issues + marketplace polish + push to GitHub
+
+Work Log:
+- Reproduced hydration error deterministically (Playwright, IST timezone + persisted store): server "Good afternoon" vs client "Good evening" → React hydration failure
+- Fixed hydration: greeting computed post-mount (rAF), zustand persist skipHydration + rehydrate() in effect — verified 0 hydration errors
+- Launched 2 parallel research subagents (R-1 PWA launch checklist, R-2 beauty-app UX benchmark) → docs/RESEARCH-PWA-LAUNCH.md, docs/RESEARCH-BEAUTY-APP-UX.md
+- Implemented P0 gaps: global search w/ relevance-grouped results + deep-open into tab sheets; 3-step onboarding (name/skin/vibe → For-you home); AM/PM routine checklist w/ progress rings + daily reset; glow streak; share buttons (Web Share + canvas cards); toast system; hash routing (#/tab) + Android back closes sheets/search; SW update flow (SKIP_WAITING + prompt); re-enabled pinch zoom (WCAG); OG/Twitter meta + og.png; iOS splash screens (4 sizes); branded 404 + error.tsx + global-error.tsx; lazy-loaded tabs w/ skeletons; manifest shortcuts/screenshots/launch_handler
+- Visual polish: hero shimmer animation, skeleton class, new icons (Search/Share/Flame/Sunrise/MoonStar/User/Pencil/Refresh), new illustrations (onboarding mirror, search empty, 404 compact, sparkle ring), dark-mode contrast bump, fixed deep-open race (setFocus in timeout), onboarding footer safe-area
+- E2E (26 checks): ALL PASS — onboarding, personalization, hash routes, back button, routine checks, search deep-open, 404, PWA files 200, share toast; hydration suite: 0 errors
+- Production build: success; committed and pushed to github.com/srivtx/aurelia (3 commits incl. clean deployment-focused README)
+
+Stage Summary:
+- Hydration: fixed and verified (0 errors under IST + persisted state)
+- App now launch-grade: search, onboarding, routines, share, update flow, 404, a11y fixes, SEO/OG, iOS splash
+- Repo live at https://github.com/srivtx/aurelia (main), dev server running on :3000
+- Remaining backlog in docs/RESEARCH-*.md (P1/P2): 12-season color analysis, GRWM step player, saved boards, push notifications, acne-101 content, storage persistence guard, analytics
