@@ -289,3 +289,40 @@ Stage Summary:
 - RESEARCH-PAPERS.md build order status: #1–#7 and #9 shipped; #8 (calibrated AR mirror) remains the parked flagship — next session candidate
 - Charters preserved: on-device only, texture-not-beauty, trends-not-diagnosis, no new dependencies
 - Ready to push as srivtx (this commit + the 11 prior)
+
+---
+Task ID: 9-b
+Agent: general-purpose (research, compliance & claims)
+Task: Live web research on regulatory/privacy/claims safety for Aurelia
+
+Work Log:
+- 16 successful web searches: GDPR on-device scope (EDPB 04/2019 logic via ScienceDirect), EDPB 3/2019 / Art 9 biometric-purpose line, AI Act 2024/1689 timeline, Art 50(1) chatbot duty, Art 5(1)(g) biometric categorisation + Art 50(3), MoCRA 2025-26 status, FDA cosmetic-vs-drug claims + warning-letter examples, MDCG 2019-11 / Rule 11, FTC Operation AI Comply + 2026 posture, Endorsement Guides 2023 + Reviews Rule Oct 2024, EU Reg 655/2013 criteria, Google Play Health policy, beauty/AR commentary (Finnegan/Mishcon), GPC 12-state status, WA My Health My Data, Digital Omnibus AI Act delay, DiGA, MDacne, FTC mole-app precedents
+- 3 further searches blocked by 429 rate-limits, then full tool-layer outage prevented worklog append + 2 verification searches — all tool-dependent items flagged in report
+
+Stage Summary:
+- GDPR applies only to the /api/stylist chat pipeline (chat text → LLM provider = in-scope controller processing); on-device photos/measurements/journal sit at/outside material scope — publish an Art-13-style privacy policy anyway
+- AI Act: Art 50(1) "you are chatting with an AI" disclosure is live law (since 2 Aug 2026) — needs persistent chat-UI line; skin measurement is not prohibited Art 5(1)(g) categorisation (no sensitive-attribute inference) and not Annex III high-risk (deferred to 2 Dec 2027 by Digital Omnibus anyway)
+- Claims: keep "trends not diagnosis" / "appearance not treatment" / "estimate not corneometer"; FDA tripwires = "treats acne", "boosts collagen", "reduces hyperpigmentation"; MDCG boundary = never "monitoring of disease"; document non-device qualification memo
+- FTC: no unproven AI-accuracy claims; future affiliate links need adjacent commission disclosure
+- Full report written by main agent into docs/RESEARCH-COMPLIANCE.md (this entry appended by main agent on the subagent's behalf after its tool layer went down)
+
+---
+Task ID: 9
+Agent: main
+Task: "What else can we research" — three new research dimensions (growth/monetization, compliance/claims, temporal-context skin science) + push
+
+Work Log:
+- Restored context from worklog + repo state (clean tree, in sync with aurelia/main)
+- Gap analysis of the 9 existing research docs: tech-first, problem-first, papers, UX, and launch-checklist were covered; growth strategy, regulatory/claims safety, and cycle/seasonal/sleep/stress science were NOT
+- Launched 3 parallel research subagents (9-a growth, 9-b compliance, 9-c cycle science): 9-b returned a complete 16-search report; 9-a hit the subagent turn limit (tool-layer 429 outage) and 9-c returned corrupted output
+- Ran 9-a and 9-c research myself via a persisted runner script (scripts/research-search.mjs, SDK + 4-retry backoff): 14 growth/monetization searches (TikTok trend status, Reddit, competitor tools, TWA/Play 12-tester rule, iOS 4.2, install-conversion, k-factor, freemium, Sephora/LTK/ShopMy rates, app pricing, influencer rates, eCPM) + 11 cycle-science searches (cycle × sebum/barrier, cycle-syncing critique, premenstrual acne flare, seasonal SC hydration/TEWL, sleep, stress-acne, circadian, pollution, cycle-aware competitor scan)
+- Wrote docs/RESEARCH-COMPLIANCE.md from 9-b's report: GDPR applies only to the /api/stylist chat pipeline (on-device photos outside biometric territory — EDPB 3/2019 purpose line); EU AI Act Art. 50(1) AI-chat disclosure live since 2 Aug 2026; not Annex III high-risk (deferred to Dec 2027 by Digital Omnibus); FDA cosmetic-vs-drug claim tripwires ("treats acne", "boosts collagen"); MDR/MDCG 2019-11 boundary = never "monitoring of disease"; FTC AI-claims + future affiliate disclosure; 12-row claims-language matrix; 7 required artifacts (privacy policy sections, chat disclosure line, classification memo)
+- Wrote docs/RESEARCH-GROWTH.md: 10-bullet evidence-backed strategy — TikTok #coloranalysis demand durable (631M→750M views, active into 2026); free-tool SERP winnable; TWA→Play Store path ($25 + 12-tester/14-day rule); Apple 4.2 = skip, PWA-install path for iOS; share-card loop is the native growth loop (k-factor = i×c, 19% advocate benchmark); affiliate rates 4-30% with adjacent FTC disclosure; $12 one-time Deep Report pricing (vs $150-500 human analysis); ads REJECTED (privacy charter + $2.80-8 eCPM); 3-phase zero-backend playbook
+- Wrote docs/RESEARCH-CYCLE-SCIENCE.md: honest strength verdicts — premenstrual acne flare STRONG (Lucky 2004/Geller 2014: 63%, 129+74 citations), cycle barrier effects MIXED (Nguyen 2024 vs Murakami 2022), cycle-syncing trend = inconclusive evidence (PMC Mar 2025); seasonal skin STRONG (Nam 2015, 85 citations); sleep STRONG (1-night hydration drop); stress-acne STRONG (Zari 2017, 125 citations; Chiu 2003, 500 citations); circadian MODERATE (AM/PM already shipped); pollution STRONG epidemiology; competitor gap confirmed (period trackers ≠ measured skin); "Context Layer" feature design (JournalContext tags, seasonal routine tilt, correlation milestones) with build order #1-5 (0.25-3 d each) and verbatim disclaimers
+- Updated README.md docs index (3 new entries) + docs/CONTEXT.md research-docs table (3 new rows)
+- New script scripts/research-search.mjs persisted (reusable web-search runner with retry backoff)
+
+Stage Summary:
+- 3 new research docs (compliance / growth / cycle-science) extend the portfolio from 9 to 12 documents; research-only session, no app code changed, all charters preserved
+- Highest-value next builds surfaced: (1) compliance P0s are tiny — chat AI-disclosure line + on-device measurement line + privacy policy page (~half day, Art. 50 is live law NOW); (2) Context Layer build order #1-5 (~5-8 days total, all pure TS on existing engines); (3) growth phase 1 share-card watermark + TWA Play listing
+- Reusable research runner at scripts/research-search.mjs for future sessions

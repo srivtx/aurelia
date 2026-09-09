@@ -173,6 +173,9 @@ Everything the project learned, in the order you should read it:
 | [`RESEARCH-NEXT-TECH.md`](./RESEARCH-NEXT-TECH.md) | Ranked next deep-tech layer (AR mirror, offline AI, OCR scanner, WebGPU color, bandit/SM-2) with verified 2026 platform status |
 | [`RESEARCH-UNIQUE-PROBLEM.md`](./RESEARCH-UNIQUE-PROBLEM.md) | Problem-first market case: the “will this work for ME” thesis + Mirror-Test engine design |
 | [`RESEARCH-PAPERS.md`](./RESEARCH-PAPERS.md) | 9 paper-grounded buildable features + the closed beauty loop thesis — the lineage behind Skin Signature, Shade Lab, Glow Delta and Skin Journal |
+| [`RESEARCH-COMPLIANCE.md`](./RESEARCH-COMPLIANCE.md) | Regulatory & claims safety: GDPR scope (chat route only; on-device photos out of biometric territory), EU AI Act Art. 50(1) chat disclosure (live law since Aug 2026), FDA cosmetic-vs-drug claim lines, MDR/MDCG 2019-11 boundary, FTC AI + affiliate rules, claims-language matrix, privacy-policy/disclaimer artifact list |
+| [`RESEARCH-GROWTH.md`](./RESEARCH-GROWTH.md) | Growth & monetization: TikTok/Reddit/SEO channel evidence, TWA→Play Store path (12-tester rule), iOS 4.2 reality, share-card loop benchmarks (k-factor), affiliate rates (Sephora/LTK/ShopMy), freemium conversion, $12 Deep-Report pricing, 3-phase zero-backend playbook |
+| [`RESEARCH-CYCLE-SCIENCE.md`](./RESEARCH-CYCLE-SCIENCE.md) | Temporal/context skin science: cycle-phase (acne flare STRONG / barrier MIXED), seasonal (STRONG), sleep & stress (STRONG), circadian (MODERATE), pollution (STRONG) — each with honest verdict + the "Context Layer" design (journal tags, seasonal routine tilt, correlation milestones) |
 | [`DEPLOYMENT.md`](./DEPLOYMENT.md) | Local dev, free model setup (Groq/Gemini/…), Vercel/Docker deploy, troubleshooting |
 | `worklog.md` (repo root) | Append-only multi-agent build log — every task, what was done, what was verified |
 

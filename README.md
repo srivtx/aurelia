@@ -121,6 +121,9 @@ Everything a contributor needs is preserved in [`docs/`](docs/):
 - **[docs/RESEARCH-NEXT-TECH.md](docs/RESEARCH-NEXT-TECH.md)** — the next layer (2026-09): live AR mirror (MediaPipe FaceLandmarker), offline stylist via Chrome built-in AI, OCR ingredient scanner, WebGPU/OKLCh color lab, bandit + spaced-repetition personalization, on-device VLM.
 - **[docs/RESEARCH-PWA-LAUNCH.md](docs/RESEARCH-PWA-LAUNCH.md)** — PWA launch checklist and benchmarks.
 - **[docs/RESEARCH-BEAUTY-APP-UX.md](docs/RESEARCH-BEAUTY-APP-UX.md)** — competitor benchmark and feature-gap analysis.
+- **[docs/RESEARCH-COMPLIANCE.md](docs/RESEARCH-COMPLIANCE.md)** — regulatory/claims safety (2026-09): GDPR scope, EU AI Act Art. 50 duties, FDA/MoCRA claim lines, MDR boundary, FTC rules, a claims-language matrix, and the required privacy/disclosure artifacts.
+- **[docs/RESEARCH-GROWTH.md](docs/RESEARCH-GROWTH.md)** — distribution & monetization strategy (2026-09): TikTok/Reddit/SEO channels, TWA Play-Store path, share-card growth loops, affiliate/freemium benchmarks, a 3-phase zero-backend playbook.
+- **[docs/RESEARCH-CYCLE-SCIENCE.md](docs/RESEARCH-CYCLE-SCIENCE.md)** — temporal/context skin science (2026-09): menstrual-cycle, seasonal, sleep, stress, circadian, pollution evidence with honest strength verdicts and the "Context Layer" feature design for the journal + routine engine.
 - `worklog.md` — append-only build log of every task and verification run.
 
 ## Project Structure
