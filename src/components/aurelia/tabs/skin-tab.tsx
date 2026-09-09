@@ -22,11 +22,12 @@ import {
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, MythCard, DotList, DoBlock, DontBlock } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
 import { QuizIllustration } from "./../illustrations";
-import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon, FlaskIcon, TrendIcon } from "./../icons";
+import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon, FlaskIcon, TrendIcon, ScanIcon } from "./../icons";
 import { useAurelia, todayKey } from "@/lib/store";
 import { shareCard } from "@/lib/share";
 import { IngredientLab } from "../ingredient-lab";
 import { SkinJournal } from "../skin-journal";
+import { ScannerLab } from "../scanner-lab";
 
 const ACCENT = "var(--cat-skin)";
 
@@ -401,7 +402,7 @@ function IngredientDetail({ ing }: { ing: (typeof ingredients)[0] }) {
 export function SkinTab() {
   const { skinResult, setSkinResult, focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
-  const [sheetBody, setSheetBody] = useState<"type" | "ing" | "lab" | "journal">("type");
+  const [sheetBody, setSheetBody] = useState<"type" | "ing" | "lab" | "journal" | "scanner">("type");
   const [typeDetail, setTypeDetail] = useState<SkinTypeId | null>(null);
   const [ingDetail, setIngDetail] = useState<(typeof ingredients)[0] | null>(null);
 
@@ -420,6 +421,10 @@ export function SkinTab() {
   const openLab = () => {
     setSheetBody("lab");
     setSheet({ id: "ingredient-lab", category: "skin", eyebrow: "Ingredient Lab", title: "Mix & match check", subtitle: "Conflict matrix + AM/PM sequencer", accent: ACCENT });
+  };
+  const openScanner = () => {
+    setSheetBody("scanner");
+    setSheet({ id: "label-scanner", category: "skin", eyebrow: "On-device OCR", title: "Label Scanner", subtitle: "Scan a product — check it against your routine", accent: ACCENT });
   };
   const openJournal = () => {
     setSheetBody("journal");
@@ -475,6 +480,22 @@ export function SkinTab() {
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-bold text-ink leading-tight">Mix & Match Lab</p>
               <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">Check conflicts between your actives, get the right AM/PM order</p>
+            </div>
+            <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+          </div>
+        </Card>
+      </section>
+
+      {/* Label Scanner — the camera door to the conflict engine */}
+      <section className="mt-3">
+        <Card onClick={openScanner} ariaLabel="Open the ingredient label scanner" className="p-4">
+          <div className="flex items-center gap-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "var(--sage-soft)", color: "var(--cat-skin)" }}>
+              <ScanIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-ink leading-tight">Scan a label</p>
+              <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">Photograph an INCI list — OCR on your phone, verdict against your routine</p>
             </div>
             <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
           </div>
@@ -623,6 +644,7 @@ export function SkinTab() {
         {sheetBody === "ing" && ingDetail && <IngredientDetail ing={ingDetail} />}
         {sheetBody === "lab" && <IngredientLab />}
         {sheetBody === "journal" && <SkinJournal />}
+        {sheetBody === "scanner" && <ScannerLab />}
       </BottomSheet>
     </div>
   );

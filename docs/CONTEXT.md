@@ -75,6 +75,8 @@ src/
     glow-delta.ts         # before/after ΔE2000 per region + glow/redness/evenness summary
     skin-journal.ts       # zone metrics (a*, evenness, Sobel texture, gloss), trends, regression, milestones
     curl-classifier.ts    # fiber geometry: orientation coherence + ridge frequency + edge density → 10-class curl pattern
+    label-scan.ts         # INCI parser + matcher + routine cross-check (pure, the Label Scanner engine)
+    ocr.ts                # lazy tesseract.js wrapper: upscale + contrast-stretch, local worker (client-only)
     search.ts             # global search index over the whole knowledge base
     stylist-rag.ts        # BM25-lite retrieval → grounds the stylist's system prompt
     ai-providers.ts       # provider registry + live model discovery + SSE→NDJSON (server-only)
@@ -149,6 +151,7 @@ persisted store).
 | 12-Season analysis | `data/seasons.ts` | 7-question diagnostic → weighted [warmth, depth, chroma, contrast] vector → nearest of 12 archetypes with confidence + runner-up; per-season 16-swatch palettes, metals, makeup, hair, avoid-lists; ΔE2000 rating of any hex vs a season palette. |
 | Outfit scorer | `lib/outfit-engine.ts` | Hue-geometry relation (mono/analogous/complementary/triadic…), lightness spread, chroma coherence, warmth coherence, neutral anchor detection, 60-30-10 role assignment, season-fit factor — scored 0-100 with human explanations. |
 | Routine sequencer | `lib/routine-engine.ts` + `data/actives.ts` | pH-ordered AM/PM sequencing, slot constraints, photosensitivity, conflict/synergy matrix with fixes (alternate nights, buffering). |
+| Label scanner | `lib/label-scan.ts` + `data/inci-aliases.ts` + `lib/ocr.ts` | The camera door to the conflict engine: split/normalize INCI text (bullets, numbering, %, headers, “may contain” colons) → match tokens onto the 12 actives (structural family patterns like every hyaluronate/peptide/ceramide/UV-filter, exact full names, bounded-Levenshtein fuzzy for OCR noise, 0→o / 1→l OCR fixes) → cross matched × her saved routine, classified product-vs-routine vs inside-product (routine-internal pairs filtered) → avoid/warn conflicts, synergies, new-for-you, plus non-active flags (drying alcohol, fragrance + EU allergens, essential oils). `ocr.ts` lazy-loads tesseract.js (CDN worker + eng model, cached), upscales to ≥1400px, grayscale + 2–98% percentile contrast stretch; every failure degrades to “paste the list instead”. Photo never uploaded — OCR runs in a local worker. |
 | Photo palette | `lib/palette-extract.ts` | Canvas downscale → Lab pixels → deterministic k-means++ (LCG-seeded) → ΔE2000 merge. 100% on-device. |
 | Face meter | `lib/face-shape.ts` | Anthropometric ratios → 6 shapes + confidence; live-morphing parametric SVG. |
 | Skin Signature | `lib/skin-signature.ts` | Dermatology colorimetry: 15×15 patch means, von-Kries white-point correction → CIELAB → **ITA°** (Chardon classes), hue-angle undertone, chroma; plausibility guards + confidence warnings. The measurement primitive for everything downstream. |
@@ -207,7 +210,8 @@ node scripts/e2e-deep-tech.mjs     # season wizard, outfit lab, conflicts, face 
 node scripts/e2e-chat-fixes.mjs    # markdown rendering, chat contrast, dark tokens, no-provider-leak
 node scripts/e2e-closed-loop.mjs   # Glow Delta + Skin Journal with synthetic calibrated selfies
 node scripts/e2e-texture-diagnosis.mjs # Texture Lab (synthetic hair) + Outfit diagnosis/swap + gloss trend
-bun scripts/test-engines.ts        # pure-engine math (glow delta, journal/gloss, curl classifier, outfit diagnosis) — no browser
+node scripts/e2e-scanner.mjs       # Label Scanner: paste flow, verdicts vs routine, live re-derive on routine edit, persistence, + a real OCR smoke (CDN-dependent, SKIPs offline)
+bun scripts/test-engines.ts        # pure-engine math (glow delta, journal/gloss, curl classifier, outfit diagnosis, label scan: splitter/matcher/fuzzy/flags/scopes/dedup/headlines) — no browser
 node scripts/check-providers.mjs   # operator: verify AI provider keys + resolution (replaces /api/models)
 bun run build                      # production build
 ```

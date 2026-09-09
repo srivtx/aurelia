@@ -11,6 +11,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type { SkinSignature } from "@/lib/skin-signature";
 import type { JournalEntry } from "@/lib/skin-journal";
 import type { CurlPatternId } from "@/lib/curl-classifier";
+import type { ScanResult } from "@/lib/label-scan";
+import { actives } from "@/data/actives";
 
 export type TabId = "home" | "colors" | "makeup" | "skin" | "hair";
 export type Category = "colors" | "makeup" | "skin" | "hair";
@@ -60,6 +62,11 @@ export interface CurlResultState {
   date: string; // local YYYY-MM-DD
 }
 
+/* Label Scanner — the actives HER routine actually uses (ids from data/actives) */
+export type MyActivesState = string[];
+/* Label Scanner — last scan verdict (lib/label-scan.ScanResult, minus raw text bloat) */
+export type ScanResultState = ScanResult;
+
 export interface FocusTarget {
   category: Category;
   id: string; // deep-open target, e.g. "color-navy", "look-party"
@@ -73,6 +80,8 @@ interface AureliaState {
   skinSignature: SkinSignatureState | null;
   journal: JournalEntryState[];
   curlResult: CurlResultState | null;
+  myActives: MyActivesState;
+  scanResult: ScanResultState | null;
   profile: Profile | null;
   streak: StreakState | null;
   routine: RoutineChecks;
@@ -87,6 +96,8 @@ interface AureliaState {
   addJournalEntry: (e: JournalEntryState) => void;
   clearJournal: () => void;
   setCurlResult: (c: CurlResultState | null) => void;
+  setMyActives: (ids: string[]) => void;
+  setScanResult: (r: ScanResultState | null) => void;
   setProfile: (p: Profile | null) => void;
   touchStreak: () => void;
   toggleRoutine: (slot: "am" | "pm", step: number) => void;
@@ -105,6 +116,9 @@ function localDay(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/* persisted routine ids must be real actives — guards against junk in storage */
+const activeIdOk = (id: string) => actives.some((a) => a.id === id);
+
 /* exported for read-only comparisons in components (safe: same value on any
    same-day render; only differs across midnight, which is a benign re-render) */
 export const todayKey = () => localDay();
@@ -121,6 +135,8 @@ export const useAurelia = create<AureliaState>()(
       skinSignature: null,
       journal: [],
       curlResult: null,
+      myActives: [],
+      scanResult: null,
       profile: null,
       streak: null,
       routine: { date: "", am: [], pm: [] },
@@ -148,6 +164,8 @@ export const useAurelia = create<AureliaState>()(
         }),
       clearJournal: () => set({ journal: [] }),
       setCurlResult: (c) => set({ curlResult: c }),
+      setMyActives: (ids) => set({ myActives: ids.filter((id) => activeIdOk(id)) }),
+      setScanResult: (r) => set({ scanResult: r }),
       setProfile: (p) => set({ profile: p }),
       touchStreak: () => {
         const today = localDay();
@@ -194,6 +212,8 @@ export const useAurelia = create<AureliaState>()(
         skinSignature: state.skinSignature,
         journal: state.journal,
         curlResult: state.curlResult,
+        myActives: state.myActives,
+        scanResult: state.scanResult,
         profile: state.profile,
         streak: state.streak,
         routine: state.routine,

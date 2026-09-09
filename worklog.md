@@ -326,3 +326,28 @@ Stage Summary:
 - 3 new research docs (compliance / growth / cycle-science) extend the portfolio from 9 to 12 documents; research-only session, no app code changed, all charters preserved
 - Highest-value next builds surfaced: (1) compliance P0s are tiny — chat AI-disclosure line + on-device measurement line + privacy policy page (~half day, Art. 50 is live law NOW); (2) Context Layer build order #1-5 (~5-8 days total, all pure TS on existing engines); (3) growth phase 1 share-card watermark + TWA Play listing
 - Reusable research runner at scripts/research-search.mjs for future sessions
+
+---
+Task ID: 10
+Agent: main
+Task: Build the INCI Label Scanner (Mirror Test V3) — the camera door to the conflict engine — then push as srivtx
+
+Work Log:
+- Scope per user go-ahead: OCR scanner (RESEARCH-UNIQUE-PROBLEM V3) reusing the shipped conflict/synergy matrix; oxidation (V2) + Shelf/PAO (V4) remain the next Mirror-Test phases
+- NEW data/inci-aliases.ts: 12-active alias table (exact INCI names, structural family patterns — every hyaluronate/peptide/ceramide/UV-filter, substring families like ascorb/retin/salicyl) + non-active flags (drying alcohols, fragrance + EU allergen list, essential-oil patterns) with honest notes
+- NEW lib/label-scan.ts (pure, deterministic, SSR-safe): splitInci (label-noise aware: bullets, numbering, %, ™, parens, "Ingredients:" headers, "May contain:" colon-split), normalizeToken, bounded-Levenshtein matchToken (early-exit, length-scaled thresholds, OCR 0→o / 1|→l pre-normalization, actives beat flags on ties), scanLabel (dedup, cross matched × her routine with scope classification product-vs-routine / inside-product, routine-internal pairs filtered, avoid-before-warn sort), scanHeadline copy, suggestRoutine (journal-frequency quick-adds)
+- NEW lib/ocr.ts (client-only): lazy `import('tesseract.js')` (v7, CDN worker + eng model — never in the app bundle), preprocess = upscale to ≥1400px + grayscale + 2–98% percentile contrast stretch, progress callbacks, typed OcrError → every failure mode degrades to the paste path; photo never leaves the local web worker
+- NEW components/aurelia/scanner-lab.tsx: capture (camera with capture=environment / paste textarea / routine editor with journal suggestions) → analyzing (spinner + phase + progress bar) → result (verdict banner, actives-found cards with confidence labels + AM/PM + notes, conflict cards with scope chips, power couples, flags, new-for-you, collapsible raw-list chips + fix-the-text, honest OCR/medical disclaimers). Verdict is re-derived LIVE from persisted text × current routine (editing routine updates the verdict instantly); Scan another resets
+- store.ts: +myActives (validated against actives table) +scanResult, both partialized + hydration-safe defaults; icons.tsx: +ScanIcon, +TextIcon
+- skin-tab.tsx: "Scan a label" card (after Mix & Match Lab) + scanner sheet body
+- bun add tesseract.js@7.0.0 (lazy-loaded at click time; bundle untouched)
+- Tests: test-engines.ts +41 checks (splitter/normalizer, editDistance, matcher exact/family/fuzzy/flags, scanLabel scopes/severity/dedup/new-actives/guards, headlines, suggestRoutine, determinism); NEW scripts/e2e-scanner.mjs — 27 checks in 4 parts: paste flow + verdict cards, LIVE routine re-derive (emptying routine flips verdict to clear, re-adding flips back), persistence across reload, empty-paste guard, + REAL OCR smoke (in-page canvas text → CDN tesseract → feeds the actual UI) which PASSED live in this environment
+- Fixes during verification: RoutineEditor collapsed-by-default bug (useState(compact) inverted), initial pasteMode collapsed, engine colon-split for "May contain:" lines, infinite-loop guard (removed sync-effect for live re-derive)
+- Docs: README (Label Scanner feature + scripts index), CONTEXT.md (engine table row + repo map + test list), DEPLOYMENT.md troubleshooting (OCR CDN note, paste fallback offline)
+
+Stage Summary:
+- test-engines: 116/116 · e2e-scanner: 27/27 (incl. live OCR: engine read the synthetic label, pipeline found niacinamide + BHA) · e2e-closed-loop: 32/32 · e2e-chat-fixes: 22/22 · e2e-new-features: all pass (lone 404 = intentional) · e2e-deep-tech: all pass, 0 hydration errors · hydration-verify: 0 errors · lint clean · tsc src/ clean
+- agent-browser live verification: scanner sheet + full conflict verdict rendered in the real DOM (store: matched [benzoyl], status conflict), 0 page/console errors
+- Charters preserved: OCR on-device in a local worker (photo never uploaded — the claim stays literally true), fuzzy matches labeled + raw text one tap away (honest by design), "education, not medical advice" line, no tracking
+- Mirror Test status: V3 shipped; V2 (oxidation heuristic) + V4 (Shelf/PAO + duplicates) remain — oxidation is a half-day pure-TS follow-up on data already measured
+- Ready to push as srivtx

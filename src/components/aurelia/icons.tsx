@@ -356,6 +356,20 @@ export const SwatchDropIcon = (props: P) => (
   </svg>
 );
 
+export const ScanIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M3.5 8V6.2A2.7 2.7 0 0 1 6.2 3.5H8M16 3.5h1.8a2.7 2.7 0 0 1 2.7 2.7V8M20.5 16v1.8a2.7 2.7 0 0 1-2.7 2.7H16M8 20.5H6.2a2.7 2.7 0 0 1-2.7-2.7V16" />
+    <path d="M3.5 12h17" strokeWidth="1.5" />
+  </svg>
+);
+
+export const TextIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M5 7.5V5.5h14v2M12 5.5v13M9 18.5h6" />
+  </svg>
+);
+
+
 
 export const outfitIcons: Record<string, (props: P) => React.ReactElement> = {
   casual: TeeIcon,

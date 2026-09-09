@@ -173,6 +173,7 @@ instead.
 | Wrong provider being served | Set `AI_PROVIDER` explicitly (see §2). |
 | PWA won't install | Serve over HTTPS and visit twice (install prompt heuristics). |
 | Share target missing | Android + installed PWA only (Chromium). |
+| Label Scanner says "OCR engine couldn't load" | tesseract.js worker + `eng` model load from a CDN (jsDelivr) on first use, then cache. On a first-run offline device the camera path fails gracefully — **paste the list instead** (fully offline, same verdict engine). Nothing about the photo is ever uploaded; OCR runs in a local web worker. |
 
 ## 8. Security notes
 

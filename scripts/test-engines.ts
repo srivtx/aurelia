@@ -33,6 +33,15 @@ import { curlPatterns, curlPatternById } from "../src/data/curl-patterns";
 import { masterStyles } from "../src/data/hair";
 import type { PatchSample } from "../src/lib/skin-signature";
 import { labToXyz, xyzToRgb } from "../src/lib/color-science";
+import {
+  splitInci,
+  normalizeToken,
+  editDistance,
+  matchToken,
+  scanLabel,
+  scanHeadline,
+  suggestRoutine,
+} from "../src/lib/label-scan";
 
 let pass = 0;
 let fail = 0;
@@ -360,6 +369,90 @@ console.log("\n── outfit diagnosis engine ──");
     const t = diagnoseOutfit(["#F2E8DC", "#8C1C13", "#D4A373"]);
     return (t.weakest?.contribution ?? 0) >= 0 && t.swap === null;
   })());
+}
+
+/* ---------- 5. Label Scan engine ---------- */
+
+console.log("\n── label-scan engine ──");
+{
+  /* splitter + normalizer */
+  check("normalizeToken strips bullets, numbering, %, ™", normalizeToken("1. Niacinamide 4%™") === "niacinamide 4".replace(" 4", "") || normalizeToken("1. Niacinamide 4%™") === "niacinamide", normalizeToken("1. Niacinamide 4%™"));
+  check("normalizeToken lowercases + trims parens (digits drop)", normalizeToken("  Alcohol Denat. (SD Alcohol 40) ") === "alcohol denat. sd alcohol", normalizeToken("  Alcohol Denat. (SD Alcohol 40) "));
+  const parts = splitInci("Ingredients: Aqua, Glycerin, Niacinamide, Salicylic Acid.\nMay contain: Fragrance");
+  check("splitInci drops the header line and splits", parts.includes("niacinamide") && parts.includes("salicylic acid") && parts.includes("aqua") && parts.includes("glycerin"), JSON.stringify(parts));
+  check("splitInci keeps may-contain tokens", parts.includes("fragrance"));
+  check("splitInci drops junk short tokens", !parts.some((p) => p.length < 3));
+
+  /* edit distance sanity */
+  check("editDistance exact = 0", editDistance("niacinamide", "niacinamide", 2) === 0);
+  check("editDistance counts substitutions", editDistance("niacinamice", "niacinamide", 2) === 1, String(editDistance("niacinamice", "niacinamide", 2)));
+  check("editDistance early-exits over max", editDistance("abc", "xyzabcxyz", 1) === 2);
+
+  /* matcher — exact, family, fuzzy */
+  check("matchToken exact: ascorbic acid → vitamin-c", matchToken("ascorbic acid")?.kind === "active" && matchToken("ascorbic acid")?.id === "vitamin-c");
+  check("matchToken exact: sodium hyaluronate → hyaluronic", matchToken("sodium hyaluronate")?.id === "hyaluronic");
+  check("matchToken family: hydroxypropyltrimonium hyaluronate via contains", matchToken("hydroxypropyltrimonium hyaluronate")?.id === "hyaluronic" && matchToken("hydroxypropyltrimonium hyaluronate")?.confidence === "family");
+  check("matchToken family: palmitoyl tripeptide-1 → peptides", matchToken("palmitoyl tripeptide-1")?.id === "peptides");
+  check("matchToken family: ceramide np → ceramides", matchToken("ceramide np")?.id === "ceramides");
+  check("matchToken family: ethylhexyl methoxycinnamate → spf", matchToken("ethylhexyl methoxincinnamate")?.id === "spf" || matchToken("ethylhexyl methoxycinnamate")?.id === "spf", JSON.stringify(matchToken("ethylhexyl methoxycinnamate")));
+  check("matchToken fuzzy: niacinamicle → niacinamide", matchToken("niacinamicle")?.id === "niacinamide" && matchToken("niacinamicle")?.confidence === "fuzzy", JSON.stringify(matchToken("niacinamicle")));
+  check("matchToken fuzzy: retin0l (OCR zero) → retinol", matchToken("retin0l")?.id === "retinol", JSON.stringify(matchToken("retin0l")));
+  check("matchToken rejects unrelated words", matchToken("phenoxyethanol") === null, JSON.stringify(matchToken("phenoxyethanol")));
+  check("matchToken flag: parfum", matchToken("parfum")?.kind === "flag" && matchToken("parfum")?.flagKind === "fragrance");
+  check("matchToken flag: linalool → fragrance allergen", matchToken("linalool")?.flagKind === "fragrance");
+  check("matchToken flag: alcohol denat → drying alcohol", matchToken("alcohol denat")?.flagKind === "alcohol");
+  check("matchToken flag: lavender oil → essential oil", matchToken("lavender oil")?.flagKind === "essential-oil");
+  check("glycerin doesn't match anything", matchToken("glycerin") === null);
+
+  /* full scan: product benzoyl × her retinol */
+  const bpLabel = "Aqua, Benzoyl Peroxide 2.5%, Alcohol Denat., Parfum, Hydroxyethylcellulose";
+  const bp = scanLabel(bpLabel, ["retinol"]);
+  check("BP scan finds benzoyl", bp.matched.some((m) => m.id === "benzoyl"));
+  check("BP × retinol flagged (warn, product-vs-routine)", bp.conflicts.some(
+    (c) => [c.aid, c.bid].sort().join("|") === "benzoyl|retinol" && c.severity === "warn" && c.scope === "product-vs-routine",
+  ), JSON.stringify(bp.conflicts));
+  check("BP scan flags alcohol + fragrance", bp.flags.some((f) => f.kind === "alcohol") && bp.flags.some((f) => f.kind === "fragrance"));
+  check("BP scan status careful", bp.status === "careful");
+
+  /* full scan: avoid-severity pair + inside-product scope */
+  const toxicDuo = scanLabel("Aqua, Ascorbic Acid, Benzoyl Peroxide, Glycerin", []);
+  check("vitamin-c × benzoyl inside product = avoid", toxicDuo.conflicts.some(
+    (c) => c.severity === "avoid" && c.scope === "inside-product",
+  ), JSON.stringify(toxicDuo.conflicts));
+  check("toxic duo status conflict", toxicDuo.status === "conflict");
+  check("her-routine-internal pairs are filtered out", scanLabel("Aqua, Niacinamide", ["retinol", "niacinamide"]).conflicts.every(
+    (c) => c.scope !== "inside-product" || c.aid !== "retinol",
+  ));
+
+  /* dedup + new-actives + no-routine behavior */
+  const dup = scanLabel("Aqua, Salicylic Acid, Betaine Salicylate, Willow Bark", []);
+  check("duplicate active ids deduped", dup.matched.filter((m) => m.id === "bha").length === 1);
+  check("newActives = matched when routine empty", dup.newActives.length === dup.matched.length);
+  check("newActives excludes owned actives", scanLabel("Aqua, Retinol", ["retinol"]).newActives.length === 0);
+  check("empty text → empty result, status clear", scanLabel("", []).ingredients.length === 0 && scanLabel("", []).status === "clear");
+  check("junk ids in myActives are ignored", scanLabel("Aqua, Retinol", ["not-a-real-active"]).newActives.length === 1);
+
+  /* synergy surfacing */
+  const syn = scanLabel("Aqua, Niacinamide, Sodium Hyaluronate", ["retinol"]);
+  check("product niacinamide × her retinol synergy surfaces", syn.synergies.some(
+    (s) => s.scope === "product-vs-routine" && /niacinamide/i.test(s.a + s.b) && /retinol/i.test(s.a + s.b),
+  ), JSON.stringify(syn.synergies));
+
+  /* headline copy */
+  check("headline: conflict wording", scanHeadline(toxicDuo, 0).title === "Heads up before you buy");
+  check("headline: no-match wording", scanHeadline(scanLabel("Aqua, Glycerin, Xanthan Gum", []), 0).title === "No familiar actives found");
+  check("headline: clear with routine", scanHeadline(scanLabel("Aqua, Niacinamide", ["niacinamide"]), 1).title === "Plays well with your routine");
+
+  /* routine suggestions from journal */
+  check("suggestRoutine counts journal frequency", suggestRoutine([
+    ["niacinamide"], ["niacinamide", "retinol"], ["niacinamide"],
+  ])[0] === "niacinamide");
+  check("suggestRoutine caps at 3 and drops junk", suggestRoutine([["retinol", "junk-id"], ["spf"], ["bha"], ["hyaluronic"]]).length === 3);
+
+  /* determinism */
+  const a1 = JSON.stringify(scanLabel(bpLabel, ["retinol"]));
+  const a2 = JSON.stringify(scanLabel(bpLabel, ["retinol"]));
+  check("scanLabel is deterministic", a1 === a2);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
