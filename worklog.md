@@ -225,3 +225,20 @@ Work Log:
 Stage Summary:
 - Deliverable: problem-first research doc + thesis; no app code changed this task
 - Proposal presented to user; implementation awaits go-ahead (phases 1-6, ~10-13 days total)
+
+---
+Task ID: 6
+Agent: main
+Task: Paper-hunt research — "what else can we build" from actual research papers
+
+Work Log:
+- Clarified user intent: wants research-paper-grounded buildable feature menu (not the market-problem thesis)
+- Ran 14 live searches across: ITA skin colorimetry, Sony multidimensional skin color, Monk Skin Tone Scale, Korean personal color research, acne AI grading, makeup transfer GANs, foundation blend prediction (arXiv 2024), skin hydration from selfies (Soh 2025), wrinkle/pore segmentation, curl-pattern fiber science, color-pair psychophysics (Schloss 2010), fashion compatibility learning (Polyvore lineage), rPPG
+- Synthesized thesis: closed beauty loop (MEASURE -> ADVISE -> RE-MEASURE -> ADAPT) — market is open-loop, papers supply the measurement tools
+- Compiled 9 buildable features with paper lineage, implementation path, effort; parked rPPG/GANs/demographic-ITA
+- Wrote docs/RESEARCH-PAPERS.md (10 sections + build order table + sources)
+
+Stage Summary:
+- Deliverable: docs/RESEARCH-PAPERS.md — 9 paper-grounded features ranked, build order 1-9, all on-device/offline, charters preserved
+- Recommended build order start: Skin Signature (ITA°) -> foundation blend predictor -> Glow Delta -> Skin Journal
+- No app code changed this task; awaits user pick
