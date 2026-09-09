@@ -208,3 +208,20 @@ Stage Summary:
 - Deliverable: docs/RESEARCH-NEXT-TECH.md (research only, no app code changed)
 - Build order recommendation: (1) bandit tips + SM-2 habits + <install> (pure TS, week 1) → (2) OCR ingredient scanner → (3) MediaPipe AR mirror + auto face-shape → (4) offline stylist (Prompt API) + build-time embeddings → (5) WebGPU color lab / VLM lab / OPFS / voice
 - All suggestions preserve the two charters: on-device by default, AI routing invisible to users
+
+---
+Task ID: 5
+Agent: main
+Task: Problem-first research — identify a unique problem AURELIA can solve that the market doesn't
+
+Work Log:
+- Read worklog + RESEARCH-NEXT-TECH.md to avoid duplicating prior tech-first research
+- Ran 16 live web searches on problem evidence: shade-mismatch returns, cross-brand shade tools, ingredient-checker limitations, color analysis pricing, PAO/expiry stats, AR try-on reliability, oxidation complaints, smartphone colorimetry science, competitor surface scan
+- Key evidence: 20-65% online beauty returns = color mismatch; Yuka-class apps criticized for ignoring interactions/context; >90% use cosmetics beyond PAO (PMC 2025); oxidation = person-dependent chemistry with zero modeling anywhere; smartphone colorimetry w/ white-reference calibration = published science (Cugmas 2020, Sirisathitkul 2025) unused in free web apps
+- Synthesized thesis: the unique problem is "Will this product actually work for ME?" — market answers fragments (safety score / AR preview / brand-locked shade finders); nobody owns a computational model of the girl
+- Designed the solve: "Mirror Test" 4-verdict engine (V1 calibrated Skin Signature + ΔE2000 shade fit, V2 oxidation-risk heuristic, V3 INCI OCR × her routine, V4 Shelf duplicates + PAO) + 6-phase build plan
+- Wrote docs/RESEARCH-UNIQUE-PROBLEM.md
+
+Stage Summary:
+- Deliverable: problem-first research doc + thesis; no app code changed this task
+- Proposal presented to user; implementation awaits go-ahead (phases 1-6, ~10-13 days total)
