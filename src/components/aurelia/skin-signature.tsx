@@ -201,7 +201,6 @@ export function SkinSignatureCapture() {
           <p className="text-[14.5px] font-bold text-ink">{STEP_PROMPTS[step].title}</p>
           <p className="text-[12px] text-ink-3 mt-0.5 mb-2.5">{STEP_PROMPTS[step].hint}</p>
           <div className="relative w-fit mx-auto rounded-[14px] overflow-hidden border border-line">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imgRef}
               alt="Your selfie — tap the marked spots"

@@ -9,6 +9,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { SkinSignature } from "@/lib/skin-signature";
+import type { JournalEntry } from "@/lib/skin-journal";
 
 export type TabId = "home" | "colors" | "makeup" | "skin" | "hair";
 export type Category = "colors" | "makeup" | "skin" | "hair";
@@ -45,6 +46,10 @@ export interface SeasonResult {
 /* persisted skin measurement — shape mirrors lib/skin-signature.SkinSignature */
 export type SkinSignatureState = SkinSignature;
 
+/* Skin Journal — closed-loop measurement history (lib/skin-journal.JournalEntry) */
+export type JournalEntryState = JournalEntry;
+export const JOURNAL_MAX_ENTRIES = 40;
+
 export interface FocusTarget {
   category: Category;
   id: string; // deep-open target, e.g. "color-navy", "look-party"
@@ -56,6 +61,7 @@ interface AureliaState {
   skinResult: { base: string; sensitiveOverlay: boolean } | null;
   seasonResult: SeasonResult | null;
   skinSignature: SkinSignatureState | null;
+  journal: JournalEntryState[];
   profile: Profile | null;
   streak: StreakState | null;
   routine: RoutineChecks;
@@ -67,6 +73,8 @@ interface AureliaState {
   setSkinResult: (r: { base: string; sensitiveOverlay: boolean } | null) => void;
   setSeasonResult: (r: SeasonResult | null) => void;
   setSkinSignature: (s: SkinSignatureState | null) => void;
+  addJournalEntry: (e: JournalEntryState) => void;
+  clearJournal: () => void;
   setProfile: (p: Profile | null) => void;
   touchStreak: () => void;
   toggleRoutine: (slot: "am" | "pm", step: number) => void;
@@ -99,6 +107,7 @@ export const useAurelia = create<AureliaState>()(
       skinResult: null,
       seasonResult: null,
       skinSignature: null,
+      journal: [],
       profile: null,
       streak: null,
       routine: { date: "", am: [], pm: [] },
@@ -116,6 +125,15 @@ export const useAurelia = create<AureliaState>()(
       setSkinResult: (r) => set({ skinResult: r }),
       setSeasonResult: (r) => set({ seasonResult: r }),
       setSkinSignature: (s) => set({ skinSignature: s }),
+      addJournalEntry: (e) =>
+        set((state) => {
+          /* replace same-date re-measurement, keep chronological, cap history */
+          const next = [e, ...state.journal.filter((x) => x.date !== e.date)].sort((a, b) =>
+            a.date > b.date ? -1 : a.date < b.date ? 1 : 0,
+          );
+          return { journal: next.slice(0, JOURNAL_MAX_ENTRIES) };
+        }),
+      clearJournal: () => set({ journal: [] }),
       setProfile: (p) => set({ profile: p }),
       touchStreak: () => {
         const today = localDay();
@@ -160,6 +178,7 @@ export const useAurelia = create<AureliaState>()(
         skinResult: state.skinResult,
         seasonResult: state.seasonResult,
         skinSignature: state.skinSignature,
+        journal: state.journal,
         profile: state.profile,
         streak: state.streak,
         routine: state.routine,

@@ -242,3 +242,26 @@ Stage Summary:
 - Deliverable: docs/RESEARCH-PAPERS.md — 9 paper-grounded features ranked, build order 1-9, all on-device/offline, charters preserved
 - Recommended build order start: Skin Signature (ITA°) -> foundation blend predictor -> Glow Delta -> Skin Journal
 - No app code changed this task; awaits user pick
+
+---
+Task ID: 7
+Agent: main
+Task: Build the closed-loop measurement features from RESEARCH-PAPERS.md (Glow Delta #3 + Skin Journal #4 — the "start building" go-ahead that the previous session began when it ran out of context)
+
+Work Log:
+- Surveyed prior state: Skin Signature (#1), Shade Match (#2), Schloss preference term (#5) already existed; #3/#4 were missing — built them
+- NEW lib/glow-delta.ts (pure, deterministic, SSR-safe): per-region ΔE2000/ΔL*/Δa*/Δb*/hue between two independently von-Kries white-corrected selfies; summary glow (mean ΔL), redness (mean Δa), evenness (region-dispersion change, ΔE76), total ΔE; region-aware readings (cheek=blush logic, jaw=contour logic, forehead=base logic); body-positive copy (measures change, never beauty); guards for unusable refs + non-skin patches
+- NEW lib/skin-journal.ts: ZonePixels (31×31 RGBA from canvas) → per-pixel Lab stats (mean Lab, redness a*, evenness = mean ΔE76 to zone mean, texture = Sobel edge energy, border-excluded); JournalEntry with tagged actives + note; journalTrends (sorted entries, % change, least-squares slope/week, direction + per-metric improving semantics); milestones ("cheek redness ↓ N% while on niacinamide"), best-zone copy; JOURNAL_DISCLAIMER charter line
+- store.ts: journal: JournalEntry[] persisted in partialize; addJournalEntry (same-date replace, chronological, cap 40) + clearJournal — hydration-safe merge (missing key falls back to [])
+- NEW components/aurelia/glow-delta.tsx (Makeup tab sheet): before → interstitial → after photo flow (explicit "Take the after selfie" step — no gesture-dependent auto-chooser), 4 taps/photo (white/cheek/jaw/forehead, 15×15 sampler), result card (headline, 3 metric tiles, per-region rows w/ before→after swatches + readings), shareCard export; wired via "Measure the change" section in makeup-tab
+- NEW components/aurelia/skin-journal.tsx (Skin tab sheet): capture (white + 4 zones) → actives tagging (9 chips from data/actives) + note → save; trends view: entries/weeks summary, best-zone callout, milestones, zone chips, per-metric rows with pure-SVG sparklines + first→latest values + improving colors, history list, clear; "+ This week" from trends (fixed view-switch bug: startCapture must setView("capture")); wired via TrendIcon card in skin-tab
+- Passport: journal summary (entries/weeks/latestDate/latestCheekRedness) in export + "skin journal · N" chip on the Home card (backward-compatible import)
+- icons.tsx: +TrendIcon (additive diff only); removed 3 unused eslint-disable directives (incl. one pre-existing)
+- Tests: NEW scripts/test-engines.ts (bun, no browser) — 38 checks over both engines incl. ΔE values, guard rejections, trend math (slope/week, %change, milestones); NEW scripts/e2e-closed-loop.mjs — 32 checks: synthetic canvas-generated selfies with known colors (tissue at fixed coords), full tap flows both features, seeded 2-entry history → 3rd entry via UI → milestone + trend assertions, persistence across reload, passport chip, 0 console errors (idempotent localStorage seed so reload keeps app-written state)
+- Docs: README (Skin Signature + Shade Lab + Glow Delta + Skin Journal features, closed-beauty-loop paragraph, scripts index), CONTEXT.md (repo map + engines table + research-docs index + test list)
+
+Stage Summary:
+- test-engines: 38/38 · e2e-closed-loop: 32/32 · e2e-chat-fixes: 22/22 · e2e-deep-tech: all pass (0 hydration errors) · e2e-new-features: all pass (lone 404 is the intentional branded-404 test) · hydration-verify: 0 errors · lint: clean · tsc src/: clean · build: success (routes unchanged: /, /api, /api/stylist)
+- The closed beauty loop is now live end-to-end: MEASURE (signature/journal) → ADVISE (existing engines) → RE-MEASURE (glow delta, weekly journal) → ADAPT (milestones wired to tagged actives)
+- All charters preserved: on-device only, trends-not-diagnosis, change-not-beauty, no new deps
+- Next candidates from RESEARCH-PAPERS.md build order: #6 curl classifier + texture hair module, #7 outfit diagnosis graph, #8 calibrated AR mirror cap

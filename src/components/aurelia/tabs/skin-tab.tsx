@@ -22,10 +22,11 @@ import {
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, MythCard, DotList, DoBlock, DontBlock } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
 import { QuizIllustration } from "./../illustrations";
-import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon, FlaskIcon } from "./../icons";
+import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon, FlaskIcon, TrendIcon } from "./../icons";
 import { useAurelia, todayKey } from "@/lib/store";
 import { shareCard } from "@/lib/share";
 import { IngredientLab } from "../ingredient-lab";
+import { SkinJournal } from "../skin-journal";
 
 const ACCENT = "var(--cat-skin)";
 
@@ -400,7 +401,7 @@ function IngredientDetail({ ing }: { ing: (typeof ingredients)[0] }) {
 export function SkinTab() {
   const { skinResult, setSkinResult, focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
-  const [sheetBody, setSheetBody] = useState<"type" | "ing" | "lab">("type");
+  const [sheetBody, setSheetBody] = useState<"type" | "ing" | "lab" | "journal">("type");
   const [typeDetail, setTypeDetail] = useState<SkinTypeId | null>(null);
   const [ingDetail, setIngDetail] = useState<(typeof ingredients)[0] | null>(null);
 
@@ -419,6 +420,10 @@ export function SkinTab() {
   const openLab = () => {
     setSheetBody("lab");
     setSheet({ id: "ingredient-lab", category: "skin", eyebrow: "Ingredient Lab", title: "Mix & match check", subtitle: "Conflict matrix + AM/PM sequencer", accent: ACCENT });
+  };
+  const openJournal = () => {
+    setSheetBody("journal");
+    setSheet({ id: "skin-journal", category: "skin", eyebrow: "Measured on-device", title: "The Skin Journal", subtitle: "Weekly zones → trends, not diagnoses", accent: ACCENT });
   };
 
   /* deep-open from global search (e.g. "oily skin", "niacinamide") */
@@ -470,6 +475,22 @@ export function SkinTab() {
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-bold text-ink leading-tight">Mix & Match Lab</p>
               <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">Check conflicts between your actives, get the right AM/PM order</p>
+            </div>
+            <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+          </div>
+        </Card>
+      </section>
+
+      {/* Skin Journal — the closed loop */}
+      <section className="mt-3">
+        <Card onClick={openJournal} ariaLabel="Open the skin journal trend tracker" className="p-4">
+          <div className="flex items-center gap-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "var(--sage-soft)", color: "var(--cat-skin)" }}>
+              <TrendIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-ink leading-tight">Skin Journal</p>
+              <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">A weekly calibrated selfie → redness, evenness & texture trends. Judge your routine by change, not claims</p>
             </div>
             <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
           </div>
@@ -601,6 +622,7 @@ export function SkinTab() {
         {sheetBody === "type" && typeDetail && <TypeDetail id={typeDetail} />}
         {sheetBody === "ing" && ingDetail && <IngredientDetail ing={ingDetail} />}
         {sheetBody === "lab" && <IngredientLab />}
+        {sheetBody === "journal" && <SkinJournal />}
       </BottomSheet>
     </div>
   );

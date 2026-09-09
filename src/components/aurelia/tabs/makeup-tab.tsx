@@ -9,8 +9,9 @@ import { useState, useEffect } from "react";
 import { looks, goldenOrder, face101, eye101, lip101, makeupMistakes, makeupMyths, toolCare, removalSteps, type OccasionLook, type Guide101 } from "@/data/makeup";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, MythCard, TimeChip, DotList } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
-import { LightbulbIcon, XIcon, CheckIcon, ClockIcon, BrushIcon, MirrorIcon } from "./../icons";
+import { LightbulbIcon, XIcon, CheckIcon, ClockIcon, BrushIcon, MirrorIcon, SparkleIcon } from "./../icons";
 import { useAurelia } from "@/lib/store";
+import { GlowDelta } from "../glow-delta";
 
 const ACCENT = "var(--cat-makeup)";
 
@@ -96,6 +97,7 @@ export function MakeupTab() {
   const [guide, setGuide] = useState<Guide101 | null>(null);
   const [openStep, setOpenStep] = useState<number | null>(null);
   const [showAllOrder, setShowAllOrder] = useState(false);
+  const [glowOpen, setGlowOpen] = useState(false);
 
   const guides: Guide101[] = [face101, eye101, lip101];
   const guideIcons = [MirrorIcon, BrushIcon, LightbulbIcon];
@@ -103,12 +105,21 @@ export function MakeupTab() {
   const openLook = (l: OccasionLook) => {
     setLook(l);
     setGuide(null);
+    setGlowOpen(false);
     setSheet({ id: `look-${l.id}`, category: "makeup", eyebrow: `${l.minutes} minute look`, title: l.name, subtitle: l.occasions, accent: ACCENT });
   };
   const openGuide = (g: Guide101) => {
     setGuide(g);
     setLook(null);
+    setGlowOpen(false);
     setSheet({ id: `guide-${g.id}`, category: "makeup", eyebrow: "The 101", title: g.title, subtitle: g.intro.slice(0, 60) + "…", accent: ACCENT });
+  };
+
+  const openGlow = () => {
+    setLook(null);
+    setGuide(null);
+    setGlowOpen(true);
+    setSheet({ id: "glow-delta", category: "makeup", eyebrow: "Measured on-device", title: "The Glow Delta", subtitle: "What the look actually did — in colorimetry", accent: ACCENT });
   };
 
   /* deep-open from global search (e.g. "date night look") or from Home "For you" */
@@ -181,6 +192,25 @@ export function MakeupTab() {
         <p className="text-[12px] italic text-ink-3 mt-3 leading-[17px]">
           Going dark or glittery on the eyes? Do them BEFORE your base — fallout wipes off bare skin, but smudges foundation.
         </p>
+      </section>
+
+      {/* Glow Delta — the measurable outcome */}
+      <section className="mt-9">
+        <SectionHeader eyebrow="Measure the change" title="The Glow Delta" accent={ACCENT} />
+        <Card onClick={openGlow} ariaLabel="Open the Glow Delta measurement" className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <SparkleIcon width={15} height={15} className="text-cat-makeup shrink-0" />
+                <p className="text-[15px] font-bold text-ink leading-tight">What did the look actually do?</p>
+              </div>
+              <p className="text-[12.5px] text-ink-3 mt-1.5 leading-[18px]">
+                Before + after selfies → real ΔE2000 colorimetry: luminance lift, redness shift, evenness. Shareable, on-device, never a “beauty score”.
+              </p>
+            </div>
+            <Chip color={ACCENT}>ΔE</Chip>
+          </div>
+        </Card>
       </section>
 
       {/* 101 guides */}
@@ -267,6 +297,7 @@ export function MakeupTab() {
       <BottomSheet data={sheet} onClose={() => setSheet(null)}>
         {look && <LookDetail look={look} />}
         {guide && <GuideDetail guide={guide} />}
+        {glowOpen && <GlowDelta />}
       </BottomSheet>
     </div>
   );

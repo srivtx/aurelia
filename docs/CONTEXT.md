@@ -52,6 +52,10 @@ src/
     season-analysis.tsx   # 12-season wizard + result (signal profile, palette, badge)
     outfit-lab.tsx        # outfit scorer UI (factor bars, 60-30-10 roles, season fit)
     photo-analyzer.tsx    # photo → palette (on-device k-means) + share-target pickup
+    skin-signature.tsx    # selfie + white reference → ITA° capture flow (tap patches)
+    shade-lab.tsx         # shade verdicts vs measured skin (blend model, oxidation, ashy)
+    glow-delta.tsx        # before/after selfies → ΔE2000 outcome card (Makeup tab)
+    skin-journal.tsx      # weekly zone capture + trend sparklines + milestones (Skin tab)
     ingredient-lab.tsx    # actives sequencer (AM/PM timelines, conflicts)
     face-meter.tsx        # anthropometric face-shape classifier + morphing SVG
     passport-card.tsx     # Beauty Passport export/import (Home tab)
@@ -65,6 +69,10 @@ src/
     routine-engine.ts     # AM/PM sequencer: pH order, slots, photosensitivity, conflicts
     palette-extract.ts    # deterministic k-means++ in Lab space from an image
     face-shape.ts         # ratios (L/C, F/C, J/C) → 6 shapes + confidence
+    skin-signature.ts     # ITA° colorimetry: von-Kries white-point correction, Lab averaging, depth/undertone
+    shade-match.ts        # Lab blend model: predicted on-skin color, ΔE2000, oxidation + ashy risk
+    glow-delta.ts         # before/after ΔE2000 per region + glow/redness/evenness summary
+    skin-journal.ts       # zone metrics (a*, evenness, Sobel texture), trends, regression, milestones
     search.ts             # global search index over the whole knowledge base
     stylist-rag.ts        # BM25-lite retrieval → grounds the stylist's system prompt
     ai-providers.ts       # provider registry + live model discovery + SSE→NDJSON (server-only)
@@ -141,6 +149,10 @@ persisted store).
 | Routine sequencer | `lib/routine-engine.ts` + `data/actives.ts` | pH-ordered AM/PM sequencing, slot constraints, photosensitivity, conflict/synergy matrix with fixes (alternate nights, buffering). |
 | Photo palette | `lib/palette-extract.ts` | Canvas downscale → Lab pixels → deterministic k-means++ (LCG-seeded) → ΔE2000 merge. 100% on-device. |
 | Face meter | `lib/face-shape.ts` | Anthropometric ratios → 6 shapes + confidence; live-morphing parametric SVG. |
+| Skin Signature | `lib/skin-signature.ts` | Dermatology colorimetry: 15×15 patch means, von-Kries white-point correction → CIELAB → **ITA°** (Chardon classes), hue-angle undertone, chroma; plausibility guards + confidence warnings. The measurement primitive for everything downstream. |
+| Shade match | `lib/shade-match.ts` | Lab-space α-blend per product kind (arXiv 2024 lineage) → predicted on-skin Lab, ΔE2000 visibility, shade-step depth, hue congruence, oxidation-risk heuristic (sebum × warm pull), ashy-cast detection; fit score 0-100. |
+| Glow Delta | `lib/glow-delta.ts` | Kim 2023 lineage: two independently white-corrected selfies → per-region (cheek/jaw/forehead) ΔE2000, ΔL\*/Δa\*/Δb\*, hue shift; summary glow/redness/evenness (region dispersion); region-aware copy that measures *change*, never beauty. |
+| Skin Journal | `lib/skin-journal.ts` | Closed-loop retention: 31×31 zone patches → per-pixel Lab stats (redness a\*, evenness = mean ΔE76 to zone mean, texture = Sobel edge energy) → entries (with tagged actives) → trend regression (slope/week, % change) + milestones (“redness ↓ 18% while on niacinamide”). Trends, never diagnosis. |
 | Stylist RAG | `lib/stylist-rag.ts` | BM25-lite retrieval (idf + title boost + synonym expansion) over the app's own KB → injected into the system prompt so replies are grounded. |
 | WebMCP bridge | `lib/webmcp.ts` | Registers the engines as **read-only MCP tools** (`document.modelContext.registerTool`, spec Sept-2026 + navigator shim) so the user's AI agent can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge`, `compare_colors` on the live page. |
 | Provider layer | `lib/ai-providers.ts` | Registry of OpenAI-compatible providers, live model discovery (10-min cache), SSE→NDJSON streaming, curated fallbacks. |
@@ -154,6 +166,9 @@ Everything the project learned, in the order you should read it:
 | [`RESEARCH-PWA-LAUNCH.md`](./RESEARCH-PWA-LAUNCH.md) | PWA quality bar, launch checklist, retention benchmarks, gap scorecard (2025-26) |
 | [`RESEARCH-BEAUTY-APP-UX.md`](./RESEARCH-BEAUTY-APP-UX.md) | Competitor benchmark (YouCam, GlowUp, Dressika, Skin Bliss…), content coverage tables, prioritized feature gaps |
 | [`RESEARCH-DEEPTECH.md`](./RESEARCH-DEEPTECH.md) | WebMCP spec deep-dive (current API shape), free LLM provider matrix (verified 2026-09), modern PWA APIs (share target, file handling, badging, view transitions, storage), ranked original deep-tech ideas |
+| [`RESEARCH-NEXT-TECH.md`](./RESEARCH-NEXT-TECH.md) | Ranked next deep-tech layer (AR mirror, offline AI, OCR scanner, WebGPU color, bandit/SM-2) with verified 2026 platform status |
+| [`RESEARCH-UNIQUE-PROBLEM.md`](./RESEARCH-UNIQUE-PROBLEM.md) | Problem-first market case: the “will this work for ME” thesis + Mirror-Test engine design |
+| [`RESEARCH-PAPERS.md`](./RESEARCH-PAPERS.md) | 9 paper-grounded buildable features + the closed beauty loop thesis — the lineage behind Skin Signature, Shade Lab, Glow Delta and Skin Journal |
 | [`DEPLOYMENT.md`](./DEPLOYMENT.md) | Local dev, free model setup (Groq/Gemini/…), Vercel/Docker deploy, troubleshooting |
 | `worklog.md` (repo root) | Append-only multi-agent build log — every task, what was done, what was verified |
 
@@ -183,6 +198,8 @@ node scripts/hydration-verify.mjs  # 0 hydration errors
 node scripts/e2e-new-features.mjs  # onboarding, routes, search, share, PWA files
 node scripts/e2e-deep-tech.mjs     # season wizard, outfit lab, conflicts, face meter, stylist
 node scripts/e2e-chat-fixes.mjs    # markdown rendering, chat contrast, dark tokens, no-provider-leak
+node scripts/e2e-closed-loop.mjs   # Glow Delta + Skin Journal with synthetic calibrated selfies
+bun scripts/test-engines.ts        # pure-engine math (glow delta, journal metrics, trends) — no browser
 node scripts/check-providers.mjs   # operator: verify AI provider keys + resolution (replaces /api/models)
 bun run build                      # production build
 ```

@@ -12,6 +12,7 @@
 
 import { useAurelia } from "./store";
 import { seasonById } from "@/data/seasons";
+import { journalTrends, JOURNAL_ZONES } from "./skin-journal";
 
 export interface Passport {
   aurelia_passport: 1;
@@ -19,6 +20,7 @@ export interface Passport {
   profile: { name: string | null; skinType: string | null; vibe: string | null };
   season: { id: string; name: string; tagline: string } | null;
   skin: { type: string | null; sensitive: boolean };
+  journal: { entries: number; weeks: number; latestDate: string | null; latestCheekRedness: number | null } | null;
   savedCount: number;
   streak: number;
 }
@@ -26,12 +28,27 @@ export interface Passport {
 export function buildPassport(): Passport {
   const s = useAurelia.getState();
   const season = s.seasonResult ? seasonById(s.seasonResult.id) : null;
+  const trends = journalTrends(s.journal);
+  const latest = s.journal.find((e) => e.date === trends.latestDate) ?? null;
+  const cheeks = JOURNAL_ZONES.filter((z) => z === "cheekL" || z === "cheekR")
+    .map((z) => latest?.zones[z])
+    .filter((m): m is NonNullable<typeof m> => Boolean(m));
   return {
     aurelia_passport: 1,
     exported: new Date().toISOString().slice(0, 10),
     profile: s.profile ? { name: s.profile.name ?? null, skinType: s.profile.skinType ?? null, vibe: s.profile.vibe ?? null } : { name: null, skinType: null, vibe: null },
     season: season ? { id: season.id, name: season.name, tagline: season.tagline } : null,
     skin: { type: s.skinResult?.base ?? s.profile?.skinType ?? null, sensitive: s.skinResult?.sensitiveOverlay ?? false },
+    journal: s.journal.length
+      ? {
+          entries: trends.entries,
+          weeks: trends.weeks,
+          latestDate: trends.latestDate,
+          latestCheekRedness: cheeks.length
+            ? Math.round((cheeks.reduce((sum, m) => sum + m.a, 0) / cheeks.length) * 10) / 10
+            : null,
+        }
+      : null,
     savedCount: s.saved.length,
     streak: s.streak?.count ?? 0,
   };
@@ -48,6 +65,7 @@ export function passportToText(p: Passport): string {
     p.season ? `Season: ${p.season.name}` : null,
     p.skin.type ? `Skin: ${p.skin.type}${p.skin.sensitive ? " (sensitive)" : ""}` : null,
     p.profile.vibe ? `Vibe: ${p.profile.vibe}` : null,
+    p.journal ? `Skin Journal: ${p.journal.entries} entries over ${Math.round(p.journal.weeks)} weeks` : null,
     `${p.savedCount} saved looks · ${p.streak}-day streak`,
   ].filter(Boolean);
   return `My Aurelia Beauty Passport ✦ ${bits.join(" · ")} — from the Aurelia app.`;

@@ -17,15 +17,19 @@ Aurelia is an installable, offline-capable Progressive Web App built with Next.j
   - **12-Season Color Analysis** — a 7-question diagnostic mapped to a warmth × depth × chroma × contrast vector, classified against 12 season archetypes; yields a personal palette, metals, makeup direction, and wardrobe ratings.
   - **Outfit Lab** — scores any 2–4 colors via CIELCh hue geometry, lightness spread (WCAG-style contrast), chroma coherence, warmth coherence and personal-season fit (ΔE2000), then suggests 60-30-10 roles.
   - **Photo → Palette** — k-means clustering in CIELAB space over a downscaled canvas — dominant-color extraction that never leaves the device.
-- **Makeup** — five occasion looks with step-by-step instructions, the 12-step application order, face/eye/lip 101 guides, common mistakes, and tool care.
-- **Skincare** — a 10-question skin-type quiz, a daily AM/PM routine checklist, an ingredient dictionary, mixing rules, and the **Ingredient Lab** — an evidence-based conflict/synergy matrix with an AM/PM routine sequencer (pH-ordered, thin→thick, SPF last).
+  - **Skin Signature** — dermatology-grade colorimetry from one selfie: white-point (von-Kries) calibration against a reference patch, CIELAB averaging, **ITA°** depth classification, hue-angle undertone and chroma — the measured replacement for the folklore undertone quiz. Feeds the Shade Lab, the passport and season evidence.
+  - **Shade Lab** — foundation/blush/lip verdicts from a Lab-space blend model (arXiv 2024 lineage): predicted on-skin color, ΔE2000 visibility, shade-step depth deltas, undertone congruence, oxidation risk and ashy-cast warnings — “how it will look on YOU” without AR.
+- **Makeup** — five occasion looks with step-by-step instructions, the 12-step application order, face/eye/lip 101 guides, common mistakes, tool care — and the **Glow Delta**: before/after selfies, independently white-point corrected, measured per region with **ΔE2000** (Kim 2023 lineage) — luminance lift, redness shift, evenness change, shareable outcome card. It measures *change*, never “beauty”.
+- **Skincare** — a 10-question skin-type quiz, a daily AM/PM routine checklist, an ingredient dictionary, mixing rules, the **Ingredient Lab** (an evidence-based conflict/synergy matrix with an AM/PM routine sequencer, pH-ordered, thin→thick, SPF last) — and the **Skin Journal**, the closed beauty loop’s retention engine: a weekly calibrated selfie → per-zone redness (a\*), evenness (ΔE dispersion) and texture (edge energy) → trend sparklines, regression slopes and milestones wired to the actives you tag (“cheek redness ↓ 28% while on niacinamide”). Trends, never diagnosis.
 - **Hair** — hairstyles matched to eight outfit categories, ten master styles, face-shape guides, and the **Face Meter** — an anthropometric ratio classifier (length/cheekbone, forehead and jaw taper) with a live-morphing SVG face preview.
 - **Ask Aurelia** — an AI stylist chat with **token-by-token streaming**, markdown-rendered replies, and knowledge-grounded answers (RAG over the app's own content). The model behind her is a **server-side decision**: operators plug in a free key from Groq, Google Gemini, OpenRouter, Cerebras, Mistral, or a local LLM (Ollama/LM Studio) via env vars — users never see or choose a provider, and the built-in cloud model is the always-on fallback.
 - **Agent-ready (WebMCP)** — the color-science, season, routine, conflict and search engines are registered as **read-only MCP tools** (`document.modelContext`), so your browser/desktop AI agent (ChatGPT site tools, Chrome/Edge trials) can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge` and `compare_colors` directly against the live page.
 - **Share-to-Analyze** — on Android, share any image from anywhere into Aurelia (installed PWA) and the on-device palette analyzer runs on it; on desktop, "Open with Aurelia" via file handlers. Nothing is uploaded, ever.
-- **Beauty Passport** — your profile (season, skin type, vibe) as a portable JSON file you own: export, share, import on another device.
+- **Beauty Passport** — your profile (season, skin type, vibe, journal summary) as a portable JSON file you own: export, share, import on another device.
 
 App-level features: global search across all content including the tools, a three-step onboarding flow that personalizes the home screen, saved favorites, shareable tip and palette cards, glow streak with home-screen badge, storage persistence, dark mode, and deep-linkable hash routes.
+
+**The closed beauty loop** — MEASURE (selfie colorimetry) → ADVISE (season, routine, outfit, stylist engines) → RE-MEASURE (glow delta, weekly journal) → ADAPT (milestones wired to your actives). Every measurement is on-device, white-reference calibrated, and paper-grounded ([docs/RESEARCH-PAPERS.md](docs/RESEARCH-PAPERS.md)).
 
 ## Tech Stack
 
@@ -71,6 +75,8 @@ node scripts/hydration-verify.mjs   # hydration check under a non-UTC timezone w
 node scripts/e2e-new-features.mjs   # end-to-end pass over onboarding, search, routing, 404
 node scripts/e2e-deep-tech.mjs      # Color Lab, Ingredient Lab, Face Meter, AI stylist + hydration watch
 node scripts/e2e-chat-fixes.mjs     # chat markdown, contrast, dark-mode tokens, provider-leak check
+node scripts/e2e-closed-loop.mjs    # Glow Delta + Skin Journal flows with synthetic calibrated selfies
+bun scripts/test-engines.ts        # pure-engine math: glow delta, journal zone metrics, trends
 node scripts/check-providers.mjs    # operator: verify AI provider keys + server-side resolution
 ```
 

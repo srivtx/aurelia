@@ -138,6 +138,13 @@ export const CheckIcon = (props: P) => (
   </svg>
 );
 
+export const TrendIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M3.5 19.5 9 13l3.5 3.5L20.5 8" />
+    <path d="M15.5 8h5v5" />
+  </svg>
+);
+
 export const XIcon = (props: P) => (
   <svg {...base(props)}>
     <path d="M6 6l12 12M18 6 6 18" />

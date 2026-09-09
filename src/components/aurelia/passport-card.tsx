@@ -14,7 +14,7 @@ import { Card, Chip } from "./bits";
 import { ShareIcon, ArrowDownIcon, ArrowUpIcon } from "./icons";
 
 export function PassportCard() {
-  const { profile, seasonResult, skinResult, showToast } = useAurelia();
+  const { profile, seasonResult, skinResult, journal, showToast } = useAurelia();
   const inputRef = useRef<HTMLInputElement>(null);
   const season = seasonResult ? seasonById(seasonResult.id) : null;
   const [busy, setBusy] = useState(false);
@@ -54,6 +54,7 @@ export function PassportCard() {
         {season && <Chip color="var(--gold)">{season.name}</Chip>}
         {(skinResult?.base ?? profile?.skinType) && <Chip soft>{(skinResult?.base ?? profile?.skinType)?.replace("-", " ")} skin</Chip>}
         {profile?.vibe && <Chip soft>{profile.vibe} vibe</Chip>}
+        {journal.length > 0 && <Chip soft>skin journal · {journal.length}</Chip>}
       </div>
 
       <input
@@ -92,7 +93,7 @@ export function PassportCard() {
         </button>
       </div>
       <p className="text-[10.5px] leading-[15px] mt-2.5" style={{ color: "var(--ink-3)" }}>
-        A tiny JSON file — season, skin type, vibe. No account, no cloud: it lives only on your devices.
+        A tiny JSON file — season, skin type, vibe, journal summary. No account, no cloud: it lives only on your devices.
       </p>
     </Card>
   );
