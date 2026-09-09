@@ -10,10 +10,10 @@
 import { useMemo, useState } from "react";
 import { wardrobeColors, colorShortNames, type WardrobeColor } from "@/data/colors";
 import { seasonById } from "@/data/seasons";
-import { analyzeOutfit, type OutfitAnalysis } from "@/lib/outfit-engine";
+import { analyzeOutfit, diagnoseOutfit, type OutfitAnalysis, type OutfitDiagnosis } from "@/lib/outfit-engine";
 import { useAurelia } from "@/lib/store";
 import { Card, Chip, Eyebrow } from "./bits";
-import { FlaskIcon } from "./icons";
+import { FlaskIcon, SwapIcon } from "./icons";
 
 const MAX_PICKS = 4;
 
@@ -84,6 +84,112 @@ function readableOn(hex: string): string {
   return Y > 0.35 ? "rgba(45,35,32,0.85)" : "rgba(255,255,255,0.92)";
 }
 
+/* ---------- Outfit diagnosis (leave-one-out, Balim-2023 style) ---------- */
+
+const STATUS_META: Record<"load-bearing" | "neutral" | "weakening", { label: string; color: string }> = {
+  "load-bearing": { label: "carries it", color: "var(--success)" },
+  neutral: { label: "neutral", color: "var(--ink-3)" },
+  weakening: { label: "weakening", color: "var(--error)" },
+};
+
+function DiagnosisCard({
+  diagnosis,
+  score,
+  onApplySwap,
+}: {
+  diagnosis: OutfitDiagnosis;
+  score: number;
+  onApplySwap: (from: string, to: string) => void;
+}) {
+  const { items, weakest, swap } = diagnosis;
+  const maxAbs = Math.max(2, ...items.map((i) => Math.abs(i.contribution)));
+
+  return (
+    <Card className="p-4">
+      <Eyebrow color="var(--cat-colors)">Diagnosis — who carries the outfit</Eyebrow>
+      <p className="text-[12px] text-ink-3 mt-1 mb-3">
+        Each piece is re-scored without the others (leave-one-out) — the piece whose removal <em>helps</em> is your problem.
+      </p>
+
+      <div className="space-y-2.5" role="list" aria-label="Per-item contribution to the outfit score">
+        {items.map((it) => {
+          const meta = STATUS_META[it.status];
+          const w = (Math.abs(it.contribution) / maxAbs) * 50; // % of half-width
+          return (
+            <div key={it.hex} role="listitem" className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-full border border-line shrink-0" style={{ background: it.hex }} aria-hidden />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] font-bold text-ink truncate">{it.name}</span>
+                  <span className="text-[11px] font-bold shrink-0" style={{ color: meta.color }}>
+                    {it.contribution > 0 ? "+" : ""}{Math.round(it.contribution * 10) / 10} {meta.label}
+                  </span>
+                </div>
+                {/* centered contribution bar: right = adds, left = drains */}
+                <div className="relative h-2 rounded-full bg-surface-deep mt-1 overflow-hidden">
+                  <span className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-line" aria-hidden />
+                  <span
+                    className="absolute top-0 bottom-0 rounded-full"
+                    style={{
+                      width: `${w}%`,
+                      left: it.contribution >= 0 ? "50%" : `${50 - w}%`,
+                      background: it.contribution >= 0 ? "var(--success)" : "var(--error)",
+                      transition: "all 0.4s",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {weakest && weakest.contribution < 0 && swap && (
+        <div className="mt-3.5 rounded-[14px] border border-line-soft bg-surface-muted p-3.5">
+          <div className="flex items-center gap-2.5">
+            <SwapIcon width={18} height={18} className="shrink-0" style={{ color: "var(--cat-colors)" }} />
+            <p className="text-[13px] font-bold text-ink leading-tight">
+              The fix: {weakest.name} → {swap.name}
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 mt-2.5">
+            <span className="w-8 h-8 rounded-full border border-line shrink-0" style={{ background: weakest.hex }} aria-hidden />
+            <span className="text-ink-3 text-[13px]" aria-hidden>→</span>
+            <span className="w-8 h-8 rounded-full border-2 shrink-0" style={{ background: swap.hex, borderColor: "var(--cat-colors)" }} aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] text-ink-2">
+                Predicted score <span className="font-bold text-ink">{swap.predictedScore}</span>
+                <span className="text-ink-3"> (now {score})</span> — a gain of <span className="font-bold" style={{ color: "var(--success)" }}>+{Math.max(0, Math.round(swap.gain))}</span> points.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onApplySwap(weakest.hex, swap.hex)}
+            className="mt-3 w-full h-10 rounded-full text-white text-[13px] font-bold press flex items-center justify-center gap-2"
+            style={{ background: "var(--cat-colors)" }}
+            aria-label={`Swap ${weakest.name} for ${swap.name}`}
+          >
+            <SwapIcon width={15} height={15} /> Apply the swap
+          </button>
+          <p className="text-[10.5px] text-ink-3 mt-2 leading-[14px]">
+            The engine tries every wardrobe color in its place — same rules, deterministic result.
+          </p>
+        </div>
+      )}
+
+      {(!weakest || weakest.contribution >= 0) && (
+        <p className="text-[12px] text-ink-3 mt-3">
+          No single piece is dragging the score — this outfit is a team effort. Rebalance the factors above if you want more.
+        </p>
+      )}
+
+      <p className="text-[10.5px] text-ink-3 mt-2.5 leading-[14px]">
+        Node-wise diagnosis in the spirit of Balim 2023 (&ldquo;Diagnosing fashion outfit compatibility&rdquo;), mapped onto Aurelia&rsquo;s deterministic color engine.
+      </p>
+    </Card>
+  );
+}
+
 export function OutfitLab({ seed = [] }: { seed?: string[] }) {
   const { seasonResult } = useAurelia();
   const season = seasonResult ? seasonById(seasonResult.id) ?? null : null;
@@ -94,6 +200,15 @@ export function OutfitLab({ seed = [] }: { seed?: string[] }) {
     () => (picked.length >= 2 ? analyzeOutfit(picked, season) : null),
     [picked, season],
   );
+
+  const diagnosis: OutfitDiagnosis | null = useMemo(
+    () => (picked.length >= 3 ? diagnoseOutfit(picked, season) : null),
+    [picked, season],
+  );
+
+  const applySwap = (from: string, to: string) => {
+    setPicked((p) => p.map((c) => (c === from ? to : c)));
+  };
 
   const toggle = (c: WardrobeColor) => {
     setPicked((p) => {
@@ -211,6 +326,14 @@ export function OutfitLab({ seed = [] }: { seed?: string[] }) {
           </Card>
 
           <RoleBar analysis={analysis} />
+
+          {diagnosis && diagnosis.items.length > 0 && (
+            <DiagnosisCard
+              diagnosis={diagnosis}
+              score={analysis.score}
+              onApplySwap={applySwap}
+            />
+          )}
 
           <div className="space-y-2">
             {analysis.factors.map((f) => (

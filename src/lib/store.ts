@@ -10,6 +10,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { SkinSignature } from "@/lib/skin-signature";
 import type { JournalEntry } from "@/lib/skin-journal";
+import type { CurlPatternId } from "@/lib/curl-classifier";
 
 export type TabId = "home" | "colors" | "makeup" | "skin" | "hair";
 export type Category = "colors" | "makeup" | "skin" | "hair";
@@ -50,6 +51,15 @@ export type SkinSignatureState = SkinSignature;
 export type JournalEntryState = JournalEntry;
 export const JOURNAL_MAX_ENTRIES = 40;
 
+/* Texture Lab — measured curl pattern (lib/curl-classifier.CurlClassification) */
+export interface CurlResultState {
+  pattern: CurlPatternId;
+  family: "straight" | "wavy" | "curly" | "coily";
+  curlIndex: number;
+  confidence: number;
+  date: string; // local YYYY-MM-DD
+}
+
 export interface FocusTarget {
   category: Category;
   id: string; // deep-open target, e.g. "color-navy", "look-party"
@@ -62,6 +72,7 @@ interface AureliaState {
   seasonResult: SeasonResult | null;
   skinSignature: SkinSignatureState | null;
   journal: JournalEntryState[];
+  curlResult: CurlResultState | null;
   profile: Profile | null;
   streak: StreakState | null;
   routine: RoutineChecks;
@@ -75,6 +86,7 @@ interface AureliaState {
   setSkinSignature: (s: SkinSignatureState | null) => void;
   addJournalEntry: (e: JournalEntryState) => void;
   clearJournal: () => void;
+  setCurlResult: (c: CurlResultState | null) => void;
   setProfile: (p: Profile | null) => void;
   touchStreak: () => void;
   toggleRoutine: (slot: "am" | "pm", step: number) => void;
@@ -108,6 +120,7 @@ export const useAurelia = create<AureliaState>()(
       seasonResult: null,
       skinSignature: null,
       journal: [],
+      curlResult: null,
       profile: null,
       streak: null,
       routine: { date: "", am: [], pm: [] },
@@ -134,6 +147,7 @@ export const useAurelia = create<AureliaState>()(
           return { journal: next.slice(0, JOURNAL_MAX_ENTRIES) };
         }),
       clearJournal: () => set({ journal: [] }),
+      setCurlResult: (c) => set({ curlResult: c }),
       setProfile: (p) => set({ profile: p }),
       touchStreak: () => {
         const today = localDay();
@@ -179,6 +193,7 @@ export const useAurelia = create<AureliaState>()(
         seasonResult: state.seasonResult,
         skinSignature: state.skinSignature,
         journal: state.journal,
+        curlResult: state.curlResult,
         profile: state.profile,
         streak: state.streak,
         routine: state.routine,

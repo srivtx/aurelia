@@ -51,12 +51,13 @@ const STEP_PROMPTS: Record<Step, { title: string; hint: string }> = {
 };
 
 const METRIC_META: Record<
-  "redness" | "evenness" | "texture" | "brightness",
+  "redness" | "evenness" | "texture" | "brightness" | "gloss",
   { label: string; sub: string; lowerIsBetter: boolean; fmt: (v: number) => string }
 > = {
   redness: { label: "Redness", sub: "a* · lower is calmer", lowerIsBetter: true, fmt: (v) => v.toFixed(1) },
   evenness: { label: "Evenness", sub: "ΔE spread · lower is evener", lowerIsBetter: true, fmt: (v) => v.toFixed(1) },
   texture: { label: "Texture", sub: "edge energy · lower is smoother", lowerIsBetter: true, fmt: (v) => v.toFixed(1) },
+  gloss: { label: "Gloss", sub: "hydration proxy · estimate, not a corneometer", lowerIsBetter: false, fmt: (v) => `${Math.round(v * 100)}%` },
   brightness: { label: "Brightness", sub: "L*", lowerIsBetter: false, fmt: (v) => v.toFixed(0) },
 };
 
@@ -427,11 +428,11 @@ export function SkinJournal() {
           <Card className="p-4">
             <Eyebrow color="var(--cat-skin)">{ZONE_LABELS[activeZone]} — measured trend</Eyebrow>
             <div className="mt-2.5 space-y-3">
-              {(["redness", "evenness", "texture"] as const).map((metric) => {
+              {(["redness", "evenness", "texture", "gloss"] as const).map((metric) => {
                 const t = zoneTrends.find((x) => x.metric === metric);
                 if (!t) return null;
                 const values = journal
-                  .filter((e) => e.zones[activeZone])
+                  .filter((e) => e.zones[activeZone] && Number.isFinite(metricValue(e, activeZone, metric)))
                   .map((e) => metricValue(e, activeZone, metric));
                 const meta = METRIC_META[metric];
                 return (
@@ -593,12 +594,13 @@ function samplePatchMean(
 }
 
 function metricValue(
-  e: { zones: Partial<Record<JournalZone, { L: number; a: number; b: number; evenness: number; texture: number }>> },
+  e: { zones: Partial<Record<JournalZone, { L: number; a: number; b: number; evenness: number; texture: number; gloss?: number }>> },
   zone: JournalZone,
-  metric: "redness" | "evenness" | "texture",
+  metric: "redness" | "evenness" | "texture" | "gloss",
 ): number {
   const m = e.zones[zone];
   if (!m) return NaN;
+  if (metric === "gloss") return typeof m.gloss === "number" ? m.gloss : NaN;
   return metric === "redness" ? m.a : metric === "evenness" ? m.evenness : m.texture;
 }
 

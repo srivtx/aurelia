@@ -265,3 +265,27 @@ Stage Summary:
 - The closed beauty loop is now live end-to-end: MEASURE (signature/journal) → ADVISE (existing engines) → RE-MEASURE (glow delta, weekly journal) → ADAPT (milestones wired to tagged actives)
 - All charters preserved: on-device only, trends-not-diagnosis, change-not-beauty, no new deps
 - Next candidates from RESEARCH-PAPERS.md build order: #6 curl classifier + texture hair module, #7 outfit diagnosis graph, #8 calibrated AR mirror cap
+
+---
+Task ID: 8
+Agent: main
+Task: Continue from the context-loss interruption — build the remaining RESEARCH-PAPERS.md build-order items (#6 curl classifier + texture module, #7 outfit diagnosis UI, #9 hydration proxy), then push everything to GitHub as srivtx
+
+Work Log:
+- Restored context from worklog + repo (11 commits ahead, remote aurelia = github.com/srivtx/aurelia.git, token verified, identity srivtx already configured)
+- Decision made (user delegated): build #6/#7/#9 this session; #8 calibrated AR mirror parked (3–5 d, MediaPipe dep — documented)
+- NEW lib/curl-classifier.ts (pure, deterministic, SSR-safe): 61×61 strand patches → magnitude-weighted structure-tensor orientation coherence (doubled angle), Schmitt-trigger ridge frequency with per-profile variance gating (noise rows excluded), normalized Sobel edge density → curl index 0–100 → 10-class scale (1, 2A–C, 3A–C, 4A–C, Callender 2026 lineage); guards (flat/dark/blown patches), cross-patch agreement discount + honest warnings; calibrated against 4 synthetic anchors (straight 12.2→1, wavy 45→2C, curly 64→3B, coily 85→4B) via scripts/calibrate-curl.ts
+- NEW data/curl-patterns.ts: 10 patterns × texture-specific care (wash cadence, moisture layering, styling physics, ingredients, night) + 3 master-style matches each + pro tip — the hair-by-texture content module
+- NEW components/aurelia/curl-lab.tsx (Texture Lab sheet): photo → 2 strand taps → pattern card w/ curl-index dial (4 family zones) + metric tiles + fiber copy + care plan + style deep-links + re-measure; persisted via store curlResult (partialize, hydration-safe); hair-tab: "Know your texture" section + measured chip + curl-lab deep-open
+- Outfit diagnosis (#7) wired: outfit-lab.tsx renders existing diagnoseOutfit at ≥3 colors — per-item centered contribution bars (load-bearing/neutral/weakening), weakest callout, best-swap card with predicted score + one-tap "Apply the swap" (state swaps color, score updates); Balim 2023 footnote; SwapIcon added
+- Hydration proxy (#9): ZoneMetrics + gloss = specular fraction (bright + desaturated vs zone mean, von-Kries-corrected — Soh 2025 lineage, "estimate, not a corneometer"); trend loop filters legacy entries lacking gloss; gloss row in journal trends UI + hydration milestone + bestZone copy; backward compatible with persisted journals
+- Tests: test-engines.ts extended to 75 checks (curl math/guards/classes/data integrity, gloss specular signal, leave-one-out exactness, swap determinism); NEW e2e-texture-diagnosis.mjs — 40 checks: synthetic in-page hair canvas → full Texture Lab flow (classify, care plan, style deep-link, persistence across reload, flat-photo guard), Outfit Lab diagnosis (Soft White + Soft Black + Cream → weakest → swap Grey 87→97 → apply → team-effort), gloss trend + milestone from seeded journal
+- Docs: README (Texture Lab, Diagnosis, gloss features + scripts index), CONTEXT.md (repo map, engines table ×2 new rows, test list)
+- Chore: .gitignore scripts/tmp-e2e/ + untracked 3 stale artifact pngs
+- Browser self-verification via agent-browser (Texture Lab sheet + diagnosis card render, 0 page errors) on top of Playwright e2e
+
+Stage Summary:
+- test-engines: 75/75 · e2e-texture-diagnosis: 40/40 · e2e-closed-loop: 32/32 · e2e-chat-fixes: 22/22 · e2e-deep-tech: 0 FAIL · e2e-new-features: 0 FAIL (lone 404 = intentional branded-404 test) · hydration-verify: 0 errors · lint clean · tsc src/ clean · build success (routes unchanged: /, /_not-found, /api, /api/stylist)
+- RESEARCH-PAPERS.md build order status: #1–#7 and #9 shipped; #8 (calibrated AR mirror) remains the parked flagship — next session candidate
+- Charters preserved: on-device only, texture-not-beauty, trends-not-diagnosis, no new dependencies
+- Ready to push as srivtx (this commit + the 11 prior)

@@ -7,11 +7,13 @@
 
 import { useState, useEffect } from "react";
 import { masterStyles, outfitCategories, faceShapes, prepBasics, haircareTips, quickFixes, styleById, type HairStyle } from "@/data/hair";
+import { curlPatternById } from "@/data/curl-patterns";
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, DifficultyChip, TimeChip, DotList } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
-import { outfitIcons, LightbulbIcon, ArrowRightIcon, CheckIcon, RulerIcon } from "./../icons";
+import { outfitIcons, LightbulbIcon, ArrowRightIcon, CheckIcon, RulerIcon, SpiralIcon } from "./../icons";
 import { hairstyleMinis, faceShapeIcons, EmptySavedIllustration } from "./../illustrations";
 import { FaceMeter } from "../face-meter";
+import { CurlLab } from "../curl-lab";
 import { useAurelia } from "@/lib/store";
 
 const ACCENT = "var(--cat-hair)";
@@ -81,30 +83,41 @@ function FaceShapeDetail({ shape }: { shape: (typeof faceShapes)[0] }) {
 /* ---------- Tab ---------- */
 
 export function HairTab() {
-  const { focus, setFocus } = useAurelia();
+  const { focus, setFocus, curlResult } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
   const [styleDetail, setStyleDetail] = useState<HairStyle | null>(null);
   const [shapeDetail, setShapeDetail] = useState<(typeof faceShapes)[0] | null>(null);
   const [meterOpen, setMeterOpen] = useState(false);
+  const [curlOpen, setCurlOpen] = useState(false);
   const [activeCat, setActiveCat] = useState<string>(outfitCategories[0].id);
 
   const openStyle = (s: HairStyle) => {
     setStyleDetail(s);
     setShapeDetail(null);
     setMeterOpen(false);
+    setCurlOpen(false);
     setSheet({ id: `style-${s.id}`, category: "hair", eyebrow: `${s.difficulty} · ${s.minutes} min`, title: s.name, subtitle: `${s.length} hair · ${s.heat ? "heat tools" : "heat-free"}`, accent: ACCENT });
   };
   const openShape = (s: (typeof faceShapes)[0]) => {
     setShapeDetail(s);
     setStyleDetail(null);
     setMeterOpen(false);
+    setCurlOpen(false);
     setSheet({ id: `shape-${s.id}`, category: "hair", eyebrow: "Face shape guide", title: `${s.name} face`, subtitle: "Flatter YOUR face", accent: ACCENT });
   };
   const openMeter = () => {
     setMeterOpen(true);
     setShapeDetail(null);
     setStyleDetail(null);
+    setCurlOpen(false);
     setSheet({ id: "face-meter", category: "hair", eyebrow: "Face Meter", title: "Measure your face", subtitle: "Ratio classifier · live preview", accent: ACCENT });
+  };
+  const openCurl = () => {
+    setCurlOpen(true);
+    setShapeDetail(null);
+    setStyleDetail(null);
+    setMeterOpen(false);
+    setSheet({ id: "curl-lab", category: "hair", eyebrow: "Texture Lab", title: "Know your texture", subtitle: "Fiber geometry classifier · on-device", accent: ACCENT });
   };
 
   /* deep-open from global search (e.g. "braid", "oval face") */
@@ -115,6 +128,8 @@ export function HairTab() {
       setFocus(null);
       if (id === "face-meter") {
         openMeter();
+      } else if (id === "curl-lab") {
+        openCurl();
       } else if (id.startsWith("style-")) {
         const s = styleById(id.replace("style-", ""));
         if (s) openStyle(s);
@@ -190,6 +205,28 @@ export function HairTab() {
             );
           })}
         </div>
+      </section>
+
+      {/* Texture Lab — know your curl pattern */}
+      <section className="mt-9">
+        <SectionHeader eyebrow="Know your texture" title="Curl pattern, measured" accent={ACCENT} />
+        <Card onClick={openCurl} ariaLabel="Open the Texture Lab — measure your curl pattern" className="p-4">
+          <div className="flex items-center gap-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "color-mix(in srgb, var(--cat-hair) 14%, transparent)", color: "var(--cat-hair)" }}>
+              <SpiralIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-ink leading-tight">Texture Lab</p>
+              <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">
+                {curlResult
+                  ? `${curlPatternById(curlResult.pattern).label} · curl index ${Math.round(curlResult.curlIndex)} — tap for your care plan`
+                  : "One photo of a hair section → your 1–4C pattern + texture-specific care"}
+              </p>
+            </div>
+            {curlResult && <Chip soft>measured</Chip>}
+            <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+          </div>
+        </Card>
       </section>
 
       {/* Master list */}
@@ -295,6 +332,14 @@ export function HairTab() {
       <BottomSheet data={sheet} onClose={() => setSheet(null)}>
         {styleDetail && <StyleDetail style={styleDetail} />}
         {shapeDetail && <FaceShapeDetail shape={shapeDetail} />}
+        {curlOpen && (
+          <CurlLab
+            onOpenStyle={(id) => {
+              const s = styleById(id);
+              if (s) openStyle(s);
+            }}
+          />
+        )}
         {meterOpen && (
           <FaceMeter
             onOpenStyle={(s) => {

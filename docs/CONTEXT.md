@@ -50,17 +50,18 @@ src/
     search-sheet.tsx      # global search with relevance grouping + deep-opens
     onboarding.tsx        # 3-step first-run (name / skin / vibe)
     season-analysis.tsx   # 12-season wizard + result (signal profile, palette, badge)
-    outfit-lab.tsx        # outfit scorer UI (factor bars, 60-30-10 roles, season fit)
+    outfit-lab.tsx        # outfit scorer UI (factor bars, 60-30-10 roles, season fit, diagnosis + swap)
     photo-analyzer.tsx    # photo → palette (on-device k-means) + share-target pickup
     skin-signature.tsx    # selfie + white reference → ITA° capture flow (tap patches)
     shade-lab.tsx         # shade verdicts vs measured skin (blend model, oxidation, ashy)
     glow-delta.tsx        # before/after selfies → ΔE2000 outcome card (Makeup tab)
-    skin-journal.tsx      # weekly zone capture + trend sparklines + milestones (Skin tab)
+    skin-journal.tsx      # weekly zone capture + trend sparklines (incl. gloss) + milestones (Skin tab)
     ingredient-lab.tsx    # actives sequencer (AM/PM timelines, conflicts)
     face-meter.tsx        # anthropometric face-shape classifier + morphing SVG
+    curl-lab.tsx          # Texture Lab: hair photo → 2 strand patches → curl pattern + care plan
     passport-card.tsx     # Beauty Passport export/import (Home tab)
     tabs/                 # home · colors · makeup · skin · hair
-  data/                   # pure content: colors, palettes, seasons, actives, makeup, skincare, hair, tips
+  data/                   # pure content: colors, palettes, seasons, actives, makeup, skincare, hair, curl-patterns, tips
   lib/
     store.ts              # zustand store (persist, skipHydration — see §4)
     color-science.ts      # sRGB↔XYZ↔Lab, CIEDE2000, WCAG contrast, warmth, harmony, naming
@@ -72,7 +73,8 @@ src/
     skin-signature.ts     # ITA° colorimetry: von-Kries white-point correction, Lab averaging, depth/undertone
     shade-match.ts        # Lab blend model: predicted on-skin color, ΔE2000, oxidation + ashy risk
     glow-delta.ts         # before/after ΔE2000 per region + glow/redness/evenness summary
-    skin-journal.ts       # zone metrics (a*, evenness, Sobel texture), trends, regression, milestones
+    skin-journal.ts       # zone metrics (a*, evenness, Sobel texture, gloss), trends, regression, milestones
+    curl-classifier.ts    # fiber geometry: orientation coherence + ridge frequency + edge density → 10-class curl pattern
     search.ts             # global search index over the whole knowledge base
     stylist-rag.ts        # BM25-lite retrieval → grounds the stylist's system prompt
     ai-providers.ts       # provider registry + live model discovery + SSE→NDJSON (server-only)
@@ -152,7 +154,9 @@ persisted store).
 | Skin Signature | `lib/skin-signature.ts` | Dermatology colorimetry: 15×15 patch means, von-Kries white-point correction → CIELAB → **ITA°** (Chardon classes), hue-angle undertone, chroma; plausibility guards + confidence warnings. The measurement primitive for everything downstream. |
 | Shade match | `lib/shade-match.ts` | Lab-space α-blend per product kind (arXiv 2024 lineage) → predicted on-skin Lab, ΔE2000 visibility, shade-step depth, hue congruence, oxidation-risk heuristic (sebum × warm pull), ashy-cast detection; fit score 0-100. |
 | Glow Delta | `lib/glow-delta.ts` | Kim 2023 lineage: two independently white-corrected selfies → per-region (cheek/jaw/forehead) ΔE2000, ΔL\*/Δa\*/Δb\*, hue shift; summary glow/redness/evenness (region dispersion); region-aware copy that measures *change*, never beauty. |
-| Skin Journal | `lib/skin-journal.ts` | Closed-loop retention: 31×31 zone patches → per-pixel Lab stats (redness a\*, evenness = mean ΔE76 to zone mean, texture = Sobel edge energy) → entries (with tagged actives) → trend regression (slope/week, % change) + milestones (“redness ↓ 18% while on niacinamide”). Trends, never diagnosis. |
+| Skin Journal | `lib/skin-journal.ts` | Closed-loop retention: 31×31 zone patches → per-pixel Lab stats (redness a\*, evenness = mean ΔE76 to zone mean, texture = Sobel edge energy, gloss = specular fraction — the hydration proxy of Soh 2025, honestly labeled) → entries (with tagged actives) → trend regression (slope/week, % change) + milestones (“redness ↓ 18% while on niacinamide”). Trends, never diagnosis. |
+| Curl classifier | `lib/curl-classifier.ts` + `data/curl-patterns.ts` | Texture Lab engine (Callender 2026 lineage): 61×61 strand patches → structure-tensor orientation coherence (magnitude-weighted doubled angle), Schmitt-trigger ridge frequency with variance gating, normalized Sobel edge density → curl index 0–100 → 10-class scale (1, 2A–C, 3A–C, 4A–C); patch guards (flat/dark/blown) + cross-patch agreement discount; per-pattern care plans (wash cadence, moisture layering, styling physics, ingredients, night) and style matches. Geometry measures texture, never “good hair”. |
+| Outfit diagnosis | `lib/outfit-engine.ts` → `diagnoseOutfit` | Balim-2023-style node-wise diagnosis on the deterministic scorer: leave-one-out per-item contributions (load-bearing / neutral / weakening), weakest-item detection, exhaustive wardrobe swap search with predicted score — rendered as contribution bars + one-tap “apply the swap” in the Outfit Lab. |
 | Stylist RAG | `lib/stylist-rag.ts` | BM25-lite retrieval (idf + title boost + synonym expansion) over the app's own KB → injected into the system prompt so replies are grounded. |
 | WebMCP bridge | `lib/webmcp.ts` | Registers the engines as **read-only MCP tools** (`document.modelContext.registerTool`, spec Sept-2026 + navigator shim) so the user's AI agent can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge`, `compare_colors` on the live page. |
 | Provider layer | `lib/ai-providers.ts` | Registry of OpenAI-compatible providers, live model discovery (10-min cache), SSE→NDJSON streaming, curated fallbacks. |
@@ -199,7 +203,8 @@ node scripts/e2e-new-features.mjs  # onboarding, routes, search, share, PWA file
 node scripts/e2e-deep-tech.mjs     # season wizard, outfit lab, conflicts, face meter, stylist
 node scripts/e2e-chat-fixes.mjs    # markdown rendering, chat contrast, dark tokens, no-provider-leak
 node scripts/e2e-closed-loop.mjs   # Glow Delta + Skin Journal with synthetic calibrated selfies
-bun scripts/test-engines.ts        # pure-engine math (glow delta, journal metrics, trends) — no browser
+node scripts/e2e-texture-diagnosis.mjs # Texture Lab (synthetic hair) + Outfit diagnosis/swap + gloss trend
+bun scripts/test-engines.ts        # pure-engine math (glow delta, journal/gloss, curl classifier, outfit diagnosis) — no browser
 node scripts/check-providers.mjs   # operator: verify AI provider keys + resolution (replaces /api/models)
 bun run build                      # production build
 ```

@@ -1,8 +1,11 @@
 /* ============================================================
    Engine math tests (bun-run, no DOM):
      bun scripts/test-engines.ts
-   Covers: glow-delta (ΔE, guards, copy) and skin-journal
-   (zone metrics, entry guards, trends, milestones).
+   Covers: glow-delta (ΔE, guards, copy), skin-journal (zone
+   metrics incl. gloss/hydration proxy, entry guards, trends,
+   milestones), curl-classifier (texture math, guards, class
+   mapping, data integrity) and outfit diagnosis (leave-one-out,
+   swap search).
    ============================================================ */
 
 import {
@@ -18,6 +21,16 @@ import {
   type JournalZone,
   type ZonePixels,
 } from "../src/lib/skin-journal";
+import {
+  curlMetrics,
+  curlPatchUsable,
+  classifyCurlFromPatches,
+  classifyIndex,
+  type CurlPatternId,
+} from "../src/lib/curl-classifier";
+import { analyzeOutfit, diagnoseOutfit } from "../src/lib/outfit-engine";
+import { curlPatterns, curlPatternById } from "../src/data/curl-patterns";
+import { masterStyles } from "../src/data/hair";
 import type { PatchSample } from "../src/lib/skin-signature";
 import { labToXyz, xyzToRgb } from "../src/lib/color-science";
 
@@ -165,14 +178,17 @@ console.log("\n── skin-journal engine ──");
 
 {
   /* trends: 3 weekly entries, cheek redness falling */
-  const mk = (date: string, a: number): JournalEntry => ({
+  const mk = (date: string, a: number, gloss: number): JournalEntry => ({
     id: `t-${date}`,
     date,
     calibrated: true,
-    zones: { cheekR: { L: 70, a, b: 16, evenness: 7, texture: 12 }, forehead: { L: 68, a: 10, b: 15, evenness: 6, texture: 10 } },
+    zones: {
+      cheekR: { L: 70, a, b: 16, evenness: 7, texture: 12, gloss },
+      forehead: { L: 68, a: 10, b: 15, evenness: 6, texture: 10, gloss: 0.05 },
+    },
     actives: ["niacinamide"],
   });
-  const entries = [mk("2026-08-26", 18), mk("2026-09-02", 15), mk("2026-09-09", 12)];
+  const entries = [mk("2026-08-26", 18, 0.04), mk("2026-09-02", 15, 0.06), mk("2026-09-09", 12, 0.09)];
   const s = journalTrends(entries);
 
   const red = s.trends.find((t) => t.zone === "cheekR" && t.metric === "redness");
@@ -183,20 +199,167 @@ console.log("\n── skin-journal engine ──");
   check("slope per week ≈ -3", approx(red?.slopePerWeek ?? 0, -3, 0.2), `slope=${red?.slopePerWeek}`);
   check("weeks = 2", s.weeks === 2, `${s.weeks}`);
   check("milestone mentions niacinamide", s.milestones.some((m) => /niacinamide/i.test(m)), JSON.stringify(s.milestones));
-  check("milestone says redness down", s.milestones.some((m) => /redness is down/i.test(m)));
+  check("milestone says redness down", s.trends.length > 0 && s.milestones.some((m) => /redness is down/i.test(m)));
+  check("gloss trend exists (cheekR)", s.trends.some((t) => t.zone === "cheekR" && t.metric === "gloss" && t.direction === "up" && t.improving));
+  check("gloss milestone (hydration proxy)", s.milestones.some((m) => /gloss is up/i.test(m)), JSON.stringify(s.milestones));
   check("best zone present", Boolean(s.bestStreakZone));
 }
 
 {
-  /* flat + single entry edge cases */
+  /* flat + single entry edge cases — gloss absent (legacy entries) */
   const flat = journalTrends([
     { id: "a", date: "2026-09-01", calibrated: true, zones: { cheekR: { L: 70, a: 10, b: 15, evenness: 5, texture: 9 } }, actives: [] },
     { id: "b", date: "2026-09-08", calibrated: true, zones: { cheekR: { L: 70.2, a: 10.1, b: 15, evenness: 5.1, texture: 9.05 } }, actives: [] },
   ]);
   const red = flat.trends.find((t) => t.metric === "redness");
   check("flat change is flat", red?.direction === "flat", red?.direction);
+  check("legacy entries (no gloss) skip gloss trend", !flat.trends.some((t) => t.metric === "gloss"));
   const empty = journalTrends([]);
   check("empty journal handled", empty.entries === 0 && empty.trends.length === 0 && empty.milestones.length === 0);
+}
+
+/* ---------- 3. Hydration proxy (gloss — Soh 2025) ---------- */
+
+console.log("\n── hydration proxy (gloss) ──");
+
+{
+  /* matte zone: uniform skin + noise */
+  const matte = computeZoneMetrics(makeZone([224, 172, 150], 8), WHITE);
+  /* shiny zone: same base, but 15% of pixels pushed to a bright desaturated specular */
+  const shiny = makeZone([224, 172, 150], 8);
+  const n = shiny.w * shiny.h;
+  let painted = 0;
+  for (let i = 0; i < n && painted < Math.floor(n * 0.15); i += 7) {
+    shiny.data[i * 4] = 250;
+    shiny.data[i * 4 + 1] = 246;
+    shiny.data[i * 4 + 2] = 240;
+    painted++;
+  }
+  const glossy = computeZoneMetrics(shiny, WHITE);
+  check("matte zone gloss is low", matte.gloss < 0.08, `gloss=${matte.gloss}`);
+  check("specular zone gloss much higher", glossy.gloss > matte.gloss * 2 && glossy.gloss > 0.08, `gloss=${glossy.gloss}`);
+  check("gloss is a fraction (0..1)", glossy.gloss >= 0 && glossy.gloss <= 1);
+  check("gloss does not disturb redness much", Math.abs(glossy.a - matte.a) < 4, `a ${matte.a} → ${glossy.a}`);
+}
+
+/* ---------- 4. Curl classifier (Texture Lab) ---------- */
+
+console.log("\n── curl-classifier engine ──");
+
+/* deterministic synthetic hair patches (dark strands on light) */
+let cseed = 42;
+const crnd = () => {
+  cseed = (cseed * 1103515245 + 12345) & 0x7fffffff;
+  return cseed / 0x7fffffff;
+};
+const DARK: [number, number, number] = [58, 44, 32];
+const LIGHT: [number, number, number] = [126, 96, 68];
+function hairPatch(fn: (x: number, y: number) => number, w = 61, h = 61): ZonePixels {
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const t = Math.max(0, Math.min(1, fn(x, y)));
+      const i = (y * w + x) * 4;
+      data[i] = DARK[0] + t * (LIGHT[0] - DARK[0]);
+      data[i + 1] = DARK[1] + t * (LIGHT[1] - DARK[1]);
+      data[i + 2] = DARK[2] + t * (LIGHT[2] - DARK[2]);
+      data[i + 3] = 255;
+    }
+  }
+  return { w, h, data };
+}
+const tri = (v: number) => Math.abs(((v % 2) + 2) % 2 - 1);
+const PATCH_STRAIGHT = hairPatch((x, y) => tri((y + (crnd() - 0.5) * 2) / 11));
+const PATCH_WAVY = hairPatch((x, y) => tri((y + 7 * Math.sin(x / 7)) / 6.5));
+const PATCH_CURLY = hairPatch((x, y) => tri((y + 5 * Math.sin(x / 3.2) + 4 * Math.sin(x / 1.9)) / 4));
+const PATCH_COILY = hairPatch((x, y) => ((Math.floor(x / 2) * 31 + Math.floor(y / 2) * 17) % 2));
+const PATCH_FLAT = hairPatch(() => 0.5);
+
+{
+  const straight = curlMetrics(PATCH_STRAIGHT);
+  check("straight: high coherence", straight.coherence > 0.8, `coherence=${straight.coherence}`);
+  check("straight: low ridge frequency", straight.ridgeFreq < 0.06, `freq=${straight.ridgeFreq}`);
+  const wavy = curlMetrics(PATCH_WAVY);
+  const curly = curlMetrics(PATCH_CURLY);
+  const coily = curlMetrics(PATCH_COILY);
+  check("curl index is monotonic straight < wavy < curly < coily", straight.curlIndex < wavy.curlIndex && wavy.curlIndex < curly.curlIndex && curly.curlIndex < coily.curlIndex, [straight.curlIndex, wavy.curlIndex, curly.curlIndex, coily.curlIndex].join(" < "));
+  check("straight classifies Type 1", classifyCurlFromPatches([PATCH_STRAIGHT]).result?.pattern === "1");
+  check("wavy classifies family wavy (2A–2C)", ["2A", "2B", "2C"].includes(classifyCurlFromPatches([PATCH_WAVY]).result?.pattern ?? ""));
+  check("curly classifies family curly (3A–3C)", ["3A", "3B", "3C"].includes(classifyCurlFromPatches([PATCH_CURLY]).result?.pattern ?? ""));
+  check("coily classifies family coily (4A–4C)", ["4A", "4B", "4C"].includes(classifyCurlFromPatches([PATCH_COILY]).result?.pattern ?? ""));
+  check("coily coherence collapses", curlMetrics(PATCH_COILY).coherence < 0.1, `coherence=${curlMetrics(PATCH_COILY).coherence}`);
+}
+
+{
+  const flat = curlPatchUsable(PATCH_FLAT);
+  check("flat patch rejected", !flat.ok && /flat|strands/i.test(flat.error ?? ""), flat.error);
+  /* near-black / blown-out raw patches (the luma guards, not the texture guard) */
+  const solid = (v: number): ZonePixels => {
+    const data = new Uint8ClampedArray(31 * 31 * 4);
+    for (let i = 0; i < 31 * 31; i++) {
+      data[i * 4] = v; data[i * 4 + 1] = v; data[i * 4 + 2] = v; data[i * 4 + 3] = 255;
+    }
+    return { w: 31, h: 31, data };
+  };
+  const dark = curlPatchUsable(solid(12));
+  check("too-dark patch rejected", !dark.ok && /light|black/i.test(dark.error ?? ""), dark.error);
+  const blown = curlPatchUsable(solid(250));
+  check("blown-out patch rejected", !blown.ok && /glare|blown/i.test(blown.error ?? ""), blown.error);
+}
+
+{
+  const two = classifyCurlFromPatches([PATCH_STRAIGHT, PATCH_STRAIGHT]);
+  check("two agreeing patches: high confidence", two.ok && (two.result?.confidence ?? 0) > 0.8, `conf=${two.result?.confidence}`);
+  const mixed = classifyCurlFromPatches([PATCH_STRAIGHT, PATCH_COILY]);
+  check("disagreeing patches: warning fires", mixed.ok && typeof mixed.warning === "string", mixed.warning);
+  check("disagreeing patches: confidence discounted", (mixed.result?.confidence ?? 1) < (two.result?.confidence ?? 0), `${mixed.result?.confidence} < ${two.result?.confidence}`);
+  const one = classifyCurlFromPatches([PATCH_FLAT]);
+  check("all-flat input: error, no guess", !one.ok && Boolean(one.error), one.error);
+}
+
+{
+  /* boundary mapping + data integrity */
+  check("index 0 → Type 1", classifyIndex(0).pattern === "1");
+  check("index 100 → 4C", classifyIndex(100).pattern === "4C");
+  check("all 10 pattern ids in data, lookup round-trips", curlPatterns.length === 10 && curlPatterns.every((p) => curlPatternById(p.id).id === p.id));
+  check("every pattern has 3 style matches that exist", curlPatterns.every((p) => p.styles.length === 3 && p.styles.every((s) => masterStyles.some((m) => m.id === s.id))));
+  check("every pattern care plan complete", curlPatterns.every((p) => [p.care.wash, p.care.moisture, p.care.styling, p.care.ingredients, p.care.night].every((t) => t.length > 40)));
+  const ids: CurlPatternId[] = ["1", "2A", "3B", "4C"];
+  check("pattern lookup never misses", ids.every((i) => curlPatternById(i).id === i));
+}
+
+/* ---------- 5. Outfit diagnosis (leave-one-out) ---------- */
+
+console.log("\n── outfit diagnosis engine ──");
+
+{
+  /* 2 colors: no diagnosis possible */
+  const d2 = diagnoseOutfit(["#EFE6D8", "#22333B"]);
+  check("<3 colors → empty diagnosis", d2.items.length === 0 && d2.weakest === null && d2.swap === null);
+}
+
+{
+  /* clashing trio: one piece weakens, a swap fixes it */
+  const colors = ["#EFE6D8", "#22333B", "#D08C60"];
+  const full = analyzeOutfit(colors).score;
+  const d = diagnoseOutfit(colors);
+  check("3 colors → 3 item rows", d.items.length === 3);
+  check("weakest has negative contribution", d.weakest !== null && d.weakest.contribution < 0, `c=${d.weakest?.contribution}`);
+  check("weakest is the min contribution", d.items.every((it) => (d.weakest ? it.contribution >= d.weakest.contribution : true)));
+  check("leave-one-out math is exact", d.items.every((it, i) => {
+    const without = analyzeOutfit(colors.filter((_, j) => j !== i), null).score;
+    return approx(full - without, it.contribution, 0.001);
+  }));
+  check("swap found and predicts a gain", d.swap !== null && d.swap.predictedScore > full && d.swap.gain > 0, `swap=${d.swap?.name} ${full}→${d.swap?.predictedScore}`);
+  if (d.swap && d.weakest) {
+    const trial = colors.map((c) => (c === d.weakest!.hex ? d.swap!.hex : c));
+    check("swap prediction is deterministic (recomputed = reported)", analyzeOutfit(trial).score === d.swap.predictedScore);
+    check("swap never suggests a worn color", !colors.includes(d.swap.hex));
+  }
+  check("team-effort trio: no weakening item → no swap", (() => {
+    const t = diagnoseOutfit(["#F2E8DC", "#8C1C13", "#D4A373"]);
+    return (t.weakest?.contribution ?? 0) >= 0 && t.swap === null;
+  })());
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

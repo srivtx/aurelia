@@ -319,6 +319,22 @@ export const ChatIcon = (props: P) => (
   </svg>
 );
 
+export const SpiralIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M12 12c0-1.8 1.4-3.2 3.2-3.2 2.4 0 4.3 1.9 4.3 4.3 0 3.2-2.6 5.7-5.8 5.7-4.2 0-7.7-3.4-7.7-7.7C6 6.3 10 2.5 15 2.5" />
+    <path d="M12 12c1.8 0 3.2 1.4 3.2 3.2" opacity="0.55" />
+  </svg>
+);
+
+export const SwapIcon = (props: P) => (
+  <svg {...base(props)}>
+    <path d="M16.5 3.5 20 7l-3.5 3.5" />
+    <path d="M20 7H8.5A4.5 4.5 0 0 0 4 11.5" />
+    <path d="M7.5 20.5 4 17l3.5-3.5" />
+    <path d="M4 17h11.5A4.5 4.5 0 0 0 20 12.5" />
+  </svg>
+);
+
 export const SendIcon = (props: P) => (
   <svg {...base(props)}>
     <path d="M4 11.6 20 4l-7.6 16-2-6.4L4 11.6Z" />

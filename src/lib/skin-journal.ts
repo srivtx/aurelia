@@ -56,6 +56,7 @@ export interface ZoneMetrics {
   b: number;
   evenness: number; // mean ΔE76 to zone mean — LOWER = more even
   texture: number; // mean Sobel gradient magnitude (relative index)
+  gloss: number; // specular fraction — bright + desaturated pixels (hydration proxy, Soh 2025)
 }
 
 export interface JournalEntry {
@@ -69,13 +70,13 @@ export interface JournalEntry {
 
 export interface MetricTrend {
   zone: JournalZone;
-  metric: "redness" | "evenness" | "texture" | "brightness";
+  metric: "redness" | "evenness" | "texture" | "brightness" | "gloss";
   first: number;
   latest: number;
   changePct: number; // + = value increased
   slopePerWeek: number; // regression slope × 7 days
   direction: "down" | "up" | "flat";
-  improving: boolean; // per metric semantics (redness↓, evenness↓, texture↓, brightness↑ = improving)
+  improving: boolean; // per metric semantics (redness↓, evenness↓, texture↓, brightness↑, gloss↑ = improving)
 }
 
 export interface JournalSummary {
@@ -97,12 +98,15 @@ export const JOURNAL_DISCLAIMER =
 /**
  * Per-pixel: white-correct (von-Kries) → Lab. Zone stats:
  * mean Lab, evenness (mean ΔE76 to the mean, in-zone), texture
- * (mean Sobel magnitude on luma, border excluded).
+ * (mean Sobel magnitude on luma, border excluded), gloss
+ * (specular fraction: pixels brighter AND less chromatic than
+ * the zone mean — the T-zone highlight-ratio hydration signal
+ * validated by Soh 2025, selfie-based hydration/TEWL).
  */
 export function computeZoneMetrics(px: ZonePixels, ref: PatchSample): ZoneMetrics {
   const { w, h, data } = px;
   const n = w * h;
-  if (n === 0) return { L: 0, a: 0, b: 0, evenness: 0, texture: 0 };
+  if (n === 0) return { L: 0, a: 0, b: 0, evenness: 0, texture: 0, gloss: 0 };
 
   /* luma map (uncorrected — gradient is lighting-normal enough) */
   const luma = new Float64Array(n);
@@ -151,12 +155,24 @@ export function computeZoneMetrics(px: ZonePixels, ref: PatchSample): ZoneMetric
   for (let i = 0; i < n; i++) evSum += deltaE76(labs[i], meanLab);
   const evenness = evSum / n;
 
+  /* gloss: specular fraction — brighter than the zone mean by 5+ L*
+     AND less chromatic than the mean by 2+ C*. Matte skin ~0.02–0.06;
+     a shiny T-zone or fresh moisturizer reads 0.1–0.3. */
+  let spec = 0;
+  const meanC = Math.hypot(meanLab.a, meanLab.b);
+  for (let i = 0; i < n; i++) {
+    const lab = labs[i];
+    if (lab.L > meanLab.L + 5 && Math.hypot(lab.a, lab.b) < meanC - 2) spec++;
+  }
+  const gloss = spec / n;
+
   return {
     L: round2(meanLab.L),
     a: round2(meanLab.a),
     b: round2(meanLab.b),
     evenness: round2(evenness),
     texture: round2(texture),
+    gloss: round3(gloss),
   };
 }
 
@@ -236,6 +252,9 @@ const METRICS: { key: MetricTrend["metric"]; get: (m: ZoneMetrics) => number; lo
   { key: "evenness", get: (m) => m.evenness, lowerIsBetter: true },
   { key: "texture", get: (m) => m.texture, lowerIsBetter: true },
   { key: "brightness", get: (m) => m.L, lowerIsBetter: false },
+  /* gloss (hydration proxy): entries measured before this metric existed
+     simply don't have it — the trend loop filters those out */
+  { key: "gloss", get: (m) => m.gloss, lowerIsBetter: false },
 ];
 
 function dayIndex(date: string, base: string): number {
@@ -276,9 +295,15 @@ export function journalTrends(entries: JournalEntry[]): JournalSummary {
   for (const zone of JOURNAL_ZONES) {
     const pts = sorted.filter((e) => e.zones[zone]);
     if (pts.length < 2) continue;
-    const days = pts.map((e) => dayIndex(e.date, first.date));
     for (const { key, get, lowerIsBetter } of METRICS) {
-      const values = pts.map((e) => get(e.zones[zone]!));
+      /* only entries where this metric exists (gloss is newer than history) */
+      const ptsM = pts.filter((e) => {
+        const v = get(e.zones[zone]!);
+        return typeof v === "number" && Number.isFinite(v);
+      });
+      if (ptsM.length < 2) continue;
+      const days = ptsM.map((e) => dayIndex(e.date, first.date));
+      const values = ptsM.map((e) => get(e.zones[zone]!));
       const firstV = values[0];
       const latestV = values[values.length - 1];
       const change = pctChange(firstV, latestV);
@@ -347,6 +372,13 @@ function milestonesFor(sorted: JournalEntry[], trends: MetricTrend[]): string[] 
     const t = tx[0];
     out.push(`${cap(ZONE_LABELS[t.zone])} texture reads smoother — ${Math.abs(Math.round(t.changePct))}% less edge energy under the same light.`);
   }
+
+  /* hydration proxy (Soh 2025): forehead gloss rising while matte zones don't */
+  const gl = trends.filter((t) => t.metric === "gloss" && t.changePct >= 20);
+  if (gl.length > 0) {
+    const t = gl[0];
+    out.push(`${cap(ZONE_LABELS[t.zone])} surface gloss is up ${Math.abs(Math.round(t.changePct))}% — if you started a richer moisturizer, it's showing. (Hydration proxy — estimate, not a corneometer.)`);
+  }
   return out.slice(0, 4);
 }
 
@@ -358,6 +390,9 @@ function bestZone(
   const picks = trends.filter((t) => t.improving && t.metric !== "brightness").sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
   if (picks.length === 0) return null;
   const t = picks[0];
+  if (t.metric === "gloss") {
+    return { zone: t.zone, text: `Your ${ZONE_LABELS[t.zone]} is gaining surface gloss fastest — ${Math.abs(Math.round(t.changePct))}% since day one. (Hydration proxy.)` };
+  }
   const dir = t.metric === "redness" ? "redness" : t.metric === "evenness" ? "unevenness" : "texture";
   const verb = t.metric === "texture" ? "smoothing out" : `losing ${dir}`;
   return { zone: t.zone, text: `Your ${ZONE_LABELS[t.zone]} is the zone ${verb} fastest — ${Math.abs(Math.round(t.changePct))}% since day one.` };
@@ -371,6 +406,9 @@ function localToday(): string {
 }
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+function round3(n: number): number {
+  return Math.round(n * 1000) / 1000;
 }
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
