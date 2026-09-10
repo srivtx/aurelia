@@ -245,10 +245,11 @@ console.log("\n── hydration proxy (gloss) ──");
     painted++;
   }
   const glossy = computeZoneMetrics(shiny, WHITE);
-  check("matte zone gloss is low", matte.gloss < 0.08, `gloss=${matte.gloss}`);
-  check("specular zone gloss much higher", glossy.gloss > matte.gloss * 2 && glossy.gloss > 0.08, `gloss=${glossy.gloss}`);
-  check("gloss is a fraction (0..1)", glossy.gloss >= 0 && glossy.gloss <= 1);
-  check("gloss does not disturb redness much", Math.abs(glossy.a - matte.a) < 4, `a ${matte.a} → ${glossy.a}`);
+  const gl = matte.gloss ?? 0;
+  check("matte zone gloss is low", gl < 0.08, `gloss=${matte.gloss}`);
+  check("specular zone gloss much higher", glossy.gloss! > gl * 2 && glossy.gloss! > 0.08, `gloss=${glossy.gloss}`);
+  check("gloss is a fraction (0..1)", (glossy.gloss ?? 0) >= 0 && (glossy.gloss ?? 0) <= 1);
+  check("gloss does not disturb redness much", Math.abs(glossy.a - (matte.a ?? 0)) < 4, `a ${matte.a} → ${glossy.a}`);
 }
 
 /* ---------- 4. Curl classifier (Texture Lab) ---------- */

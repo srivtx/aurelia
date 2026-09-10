@@ -21,6 +21,7 @@ import { EmptySavedIllustration, SparkleRing } from "@/components/aurelia/illust
 import { tabIcons, SparkleIcon, RefreshIcon } from "@/components/aurelia/icons";
 import { StylistChat } from "@/components/aurelia/stylist-chat";
 import { PlatformBridge } from "@/components/aurelia/platform-bridge";
+import { InstallNotice } from "@/components/aurelia/install-notice";
 
 /* Lazy-load the four heavy tabs — smaller first paint */
 const ColorsTab = dynamic(() => import("@/components/aurelia/tabs/colors-tab").then((m) => m.ColorsTab), {
@@ -313,6 +314,9 @@ function AureliaApp() {
       {/* platform integrations: WebMCP tools · storage persistence ·
           streak badge · share-target handoff (renders nothing) */}
       <PlatformBridge />
+
+      {/* phone-only install affordance — Android native prompt, iOS hint */}
+      <InstallNotice />
     </>
   );
 }

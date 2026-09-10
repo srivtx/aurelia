@@ -59,16 +59,16 @@ const og = `
 </svg>`;
 
 /* ---------------- splash screens (per device resolution) ---------------- */
-function splash(w, h) {
+function splash(w, h, dark = false) {
   const cx = w / 2;
   const cy = h / 2 - 60;
   return `
 <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FAF7F3"/>
-      <stop offset="0.55" stop-color="#F7ECE7"/>
-      <stop offset="1" stop-color="#F2E3D9"/>
+      <stop offset="0" stop-color="${dark ? "#1C1518" : "#FAF7F3"}"/>
+      <stop offset="0.55" stop-color="${dark ? "#251B20" : "#F7ECE7"}"/>
+      <stop offset="1" stop-color="${dark ? "#2E2026" : "#F2E3D9"}"/>
     </linearGradient>
   </defs>
   <rect width="${w}" height="${h}" fill="url(#bg)"/>
@@ -80,8 +80,8 @@ function splash(w, h) {
   <text x="${cx}" y="${cy - 10}" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, serif" font-size="96" font-weight="700" fill="#ffffff">A</text>
 
   <!-- wordmark -->
-  <text x="${cx}" y="${cy + 130}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="86" font-weight="600" fill="${INK}">Aurelia</text>
-  <text x="${cx}" y="${cy + 196}" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="${INK3}">your pocket beauty editor</text>
+  <text x="${cx}" y="${cy + 130}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="86" font-weight="600" fill="${dark ? '#F6DDE3' : INK}">Aurelia</text>
+  <text x="${cx}" y="${cy + 196}" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="${dark ? 'rgba(246,221,227,0.62)' : INK3}">your pocket beauty editor</text>
 
   ${sparkle(cx - 150, cy - 120, 40, TERRA, 0.8)}
   ${sparkle(cx + 150, cy + 40, 34, SAGE, 0.7)}
@@ -101,7 +101,8 @@ async function gen() {
   ];
   for (const [w, h] of sizes) {
     await sharp(Buffer.from(splash(w, h))).png().toFile(path.join(SPLASH, `splash-${w}x${h}.png`));
-    console.log(`splash-${w}x${h}.png ✓`);
+    await sharp(Buffer.from(splash(w, h, true))).png().toFile(path.join(SPLASH, `splash-${w}x${h}-dark.png`));
+    console.log(`splash-${w}x${h}.png ✓  (+dark)`);
   }
 }
 

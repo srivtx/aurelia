@@ -421,3 +421,11 @@
     transform: none;
   }
 }
+
+/* UA-color scheme hints for standalone/PWA chrome (scrollbars, form controls) */
+:root {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}

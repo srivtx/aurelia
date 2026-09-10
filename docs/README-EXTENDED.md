@@ -120,6 +120,8 @@ Any Node.js host or container works. The app is fully static at the root route a
 
 - `public/manifest.json` — app metadata, icons, shortcuts, and screenshots.
 - `public/sw.js` — service worker with app-shell caching and an in-app update prompt (`aurelia-v5`).
+- Install affordance — a phone-only, dismissible notice: captures the native `beforeinstallprompt` (Android/Chrome) as a one-tap Install chip, and on iOS Safari (which never fires the event) shows the Share → Add to Home Screen hint. Hidden inside standalone and for 30 days after dismissal (`aurelia-install-dismissed` in localStorage).
+- Splash screens ship in light AND dark variants; iOS picks the dark splash via `media="(prefers-color-scheme: dark)"`, and the pre-hydration theme script stamps the html background + `color-scheme` before first paint so both schemes boot without a flash.
 - iOS splash screens are provided for common device sizes in `public/icons/`.
 
 ---

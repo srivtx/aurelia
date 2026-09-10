@@ -318,7 +318,7 @@ Run against the live URL (replace `https://YOUR-DEPLOY`):
 | `401` / key rejected | Key revoked or typo'd — re-copy from the provider console, then re-run the check script. |
 | Reply is empty / stream interrupted | Provider hiccup — the route already retried with the built-in model; if it persists, check the server console for `[/api/stylist]` logs. |
 | Wrong provider being served | Set `AI_PROVIDER` explicitly (see §2). |
-| PWA won't install | Serve over HTTPS and visit twice (install prompt heuristics). |
+| PWA won't install | Serve over HTTPS and visit twice (install prompt heuristics). The app shows a phone-only install notice — Android via the native prompt, iOS via Share → Add to Home Screen instructions. Dismissal is remembered for 30 days (`aurelia-install-dismissed`). |
 | Share target missing | Android + installed PWA only (Chromium). |
 | Label Scanner says "OCR engine couldn't load" | tesseract.js worker + `eng` model load from a CDN (jsDelivr) on first use, then cache. On a first-run offline device the camera path fails gracefully — **paste the list instead** (fully offline, same verdict engine). Nothing about the photo is ever uploaded; OCR runs in a local web worker. |
 | Users see stale content after a deploy | Service-worker cache — bump `VERSION` in `public/sw.js` and redeploy; the update toast appears on next launch. |

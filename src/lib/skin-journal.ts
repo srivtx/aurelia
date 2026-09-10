@@ -56,7 +56,7 @@ export interface ZoneMetrics {
   b: number;
   evenness: number; // mean ΔE76 to zone mean — LOWER = more even
   texture: number; // mean Sobel gradient magnitude (relative index)
-  gloss: number; // specular fraction — bright + desaturated pixels (hydration proxy, Soh 2025)
+  gloss?: number | null; // specular fraction — bright + desaturated pixels (hydration proxy, Soh 2025); absent on legacy entries (pre-measurement)
 }
 
 export interface JournalEntry {
@@ -254,7 +254,7 @@ const METRICS: { key: MetricTrend["metric"]; get: (m: ZoneMetrics) => number; lo
   { key: "brightness", get: (m) => m.L, lowerIsBetter: false },
   /* gloss (hydration proxy): entries measured before this metric existed
      simply don't have it — the trend loop filters those out */
-  { key: "gloss", get: (m) => m.gloss, lowerIsBetter: false },
+  { key: "gloss", get: (m) => m.gloss ?? NaN, lowerIsBetter: false }, // NaN = not measured (legacy) — the trend loop filters non-finite
 ];
 
 function dayIndex(date: string, base: string): number {

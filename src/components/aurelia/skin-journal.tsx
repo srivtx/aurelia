@@ -594,7 +594,7 @@ function samplePatchMean(
 }
 
 function metricValue(
-  e: { zones: Partial<Record<JournalZone, { L: number; a: number; b: number; evenness: number; texture: number; gloss?: number }>> },
+  e: { zones: Partial<Record<JournalZone, { L: number; a: number; b: number; evenness: number; texture: number; gloss?: number | null }>> },
   zone: JournalZone,
   metric: "redness" | "evenness" | "texture" | "gloss",
 ): number {
