@@ -382,3 +382,21 @@ Stage Summary:
 - Charters preserved: on-device only (OCR in local worker, shelf in localStorage, nothing syncs), honest wording ("recipe/likely", PAO "when in doubt, toss it", cost-per-use assumes finishing inside PAO), no new runtime deps
 - Deployment handoff complete for the next agent: docs/DEPLOYMENT.md §0 (machine-readable brief: repo facts, env contract, procedure, verification commands, red lines, current state) + this worklog + CONTEXT.md
 - Committed locally as 07037ac (single commit: Mirror Test V2+V4 + deployment guide). PUSH STATUS: attempted immediately after commit; GitHub credentials are NOT present in this session (the token used by prior sessions lived in conversation context that was lost). The remote (aurelia = github.com/srivtx/aurelia, branch main, HEAD e2c3168 verified via ls-remote) is otherwise ready: `git push aurelia main` from /home/z/my-project once a PAT is provided (e.g. `git remote set-url aurelia https://<TOKEN>@github.com/srivtx/aurelia.git`). Everything else in this task is complete and verified.
+
+---
+Task ID: push-final
+Agent: main (Super Z)
+Task: Push the completed Mirror Test V2+V4 + deployment-guide commit to github.com/srivtx/aurelia using the srivtx token provided in-session
+
+Work Log:
+- Re-established context from repo state: HEAD 389a3f8 "Mirror Test complete: oxidation verdict (V2) + the Shelf (V4) + V1 doors wired + deployment guide" (author srivtx <srivtx@users.noreply.github.com>), branch main, 1 commit ahead of remote, working tree clean
+- Verified token auth with `git ls-remote https://srivtx:TOKEN@github.com/srivtx/aurelia.git` — OK (remote main was e2c3168, i.e. pre-push state)
+- `git push https://srivtx:TOKEN@github.com/srivtx/aurelia.git main:main` — fast-forward e2c3168..389a3f8 accepted
+- Verified via ls-remote: remote refs/heads/main now 389a3f854a40b7f42a02e064a5a9698b95ea165a — PUSH CONFIRMED
+- Token used one-time inline (not persisted to .git/config or any file); remote "aurelia" remains https://github.com/srivtx/aurelia.git
+- Appended this section; committing worklog update + pushing so the repo on GitHub carries the final status
+
+Stage Summary:
+- github.com/srivtx/aurelia main = 389a3f8 — repo is now fully up to date with ALL work through the Mirror Test (V1 signature + V2 oxidation + V3 label scanner + V4 shelf), deployment guide, README, and CONTEXT.md
+- DEPLOYMENT AGENT: everything you need is in the repo — start at docs/DEPLOYMENT.md §0 (AI deployment-agent brief: repo facts, env contract, Vercel procedure, verification commands, red lines, current state); supplement with docs/CONTEXT.md and README.md
+- All prior open item (PUSH STATUS: pending token) is now CLOSED
