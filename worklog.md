@@ -424,3 +424,26 @@ What was verified:
 - Verification battery run this session: lint 0 errors, `tsc --noEmit` clean for `src/` (3 stray errors confined to workspace `examples/` + one engine-test fixture, out of app scope), `bun scripts/test-engines.ts` 191/191, production build green (standalone, routes `/` + `_not-found` + `/api` + `/api/stylist`), service worker at `aurelia-v5` as documented
 
 Repo state: main = 37b02de + this worklog commit. Docs:self-contained for a deployment agent — start at docs/DEPLOYMENT.md §0.
+
+---
+
+## 2026-09-10 — PWA install notice + dark background polish (agent session)
+
+Task: user-installed Aurelia on a phone — install felt broken, and the standalone background looked unthoughtful in dark mode.
+
+Root cause of the install "glitch": the app never captured the native `beforeinstallprompt` event, so Chrome Android's install event was silently dropped and iOS Safari has no native prompt at all (install = Share → Add to Home Screen, undocumented). The manifest/SW/icons/HTTPS criteria were verified complete — the ONLY gap was the missing install affordance + guidance.
+
+What was done:
+- `src/components/aurelia/install-notice.tsx` (new): phone-only, dismissible bottom notice mounted once in page.tsx. Android/Chromium: captures `beforeinstallprompt` and offers a one-tap Install chip (prompt + userChoice, then hides). iOS: shows "tap Share, then Add to Home Screen". Hidden inside standalone (`display-mode: standalone` / navigator.standalone), desktop never sees it, dismissal persisted 30 days under `aurelia-install-dismissed`.
+- Verified in headless Chrome with iPhone UA + small viewport: notice renders, Install chip works on the synthetic `beforeinstallprompt`, zero console errors.
+- Dark splash screens: `scripts/gen-brand-assets.js` parameterized (`splash(w, h, dark)`) → plum gradient `#1C1518 → #2E2026`, light-rose wordmark; generated `splash-<w>x<h>-dark.png` for all four device sizes; `layout.tsx` links them via `media="prefers-color-scheme: dark" and ...` alongside the light set (iOS honors scheme media queries for startup images).
+- Boot flash killed in standalone: the pre-hydration theme script now stamps `html.style.backgroundColor` + `colorScheme` (`#1C1518` dark / `#FAF7F3` light) synchronously before first paint — no cream flash in dark mode, no white flash in light.
+- `globals.css`: added `:root{color-scheme:light}` / `html.dark{color-scheme:dark}` (UA scrollbars + form controls match the theme).
+- Along the way: `ZoneMetrics.gloss` widened to `gloss?: number | null` in `src/lib/skin-journal.ts` (legacy entries legitimately lack the newer metric — the trend loop already filtered non-finite values; now the types say it), `metricValue` param widened to match, engine test fixtures guarded; `scripts/test-engines.ts` updated to the widened type.
+- `playwright` added as devDependency so the e2e suites are runnable without global install (docs already described them as global — scripts now work with the local dep too).
+
+What was verified:
+- lint clean; `tsc --noEmit` clean for `src/` + scripts (stray `examples/websocket` missing socket.io deps remain, out of app scope); `bun scripts/test-engines.ts` 191/191; production build green.
+- Light + dark splash PNGs inspected visually (240x520 relight previews) — correct brand treatment both schemes.
+- `node scripts/e2e-new-features.mjs`: full pass (onboarding, search deep-open, hash routing/back, checklist, branded 404, share-to-toast, manifest/sw/splash 200s). The single 404 console error is the intentional branded-404 test, as documented.
+- `e2e-new-features`, hydration battery not re-run this session beyond the above (hydration-verify not run — install-notice mounts inside effects only, defer-based; no render-time Date/UA use except in effect bodies).
