@@ -400,3 +400,27 @@ Stage Summary:
 - github.com/srivtx/aurelia main = 389a3f8 — repo is now fully up to date with ALL work through the Mirror Test (V1 signature + V2 oxidation + V3 label scanner + V4 shelf), deployment guide, README, and CONTEXT.md
 - DEPLOYMENT AGENT: everything you need is in the repo — start at docs/DEPLOYMENT.md §0 (AI deployment-agent brief: repo facts, env contract, Vercel procedure, verification commands, red lines, current state); supplement with docs/CONTEXT.md and README.md
 - All prior open item (PUSH STATUS: pending token) is now CLOSED
+
+---
+
+## 2026-09-10 — README/DOCS release polish (agent session)
+
+Task: bring the repo's public-facing docs to production OSS convention (Bun/Hono pattern) without removing research or context.
+
+What was done:
+- Rewrote README as the short production version: centered logo, flat badges, one-line tagline ("Beauty advice with a mechanism."), engine-table proof up top, install-first flow, self-contained Deploy section (one-click Vercel button + zero-vars note + provider priority), tight feature bullets, 14-row docs index; verbatim deep detail moved to docs/README-EXTENDED.md (all paper lineage, verification battery, project structure preserved verbatim)
+- docs/README-EXTENDED.md: the deep README, cross-linked both ways (no content removed from the old README)
+- CONTRIBUTING.md added: fork→branch→PR flow + load-bearing repo rules (token aliases, hydration, pure engines, privacy claims, server-only provider identity, copy voice, worklog append-only, SW version bump) + pre-PR verification battery
+- LICENSE added: All-Rights-Reserved text (README already claimed it; repo no longer shows "no license" ambiguity)
+- Fixed stale versions: docs/CONTEXT.md Next.js 15 → 16; docs/RESEARCH-DEEPTECH.md "15/16" → 16
+- package.json: scaffold name `nextjs_tailwind_shadcn_ts` → `aurelia`; added description/repository/homepage/bugs/author metadata
+- Fixed cross-references: README contributing section → CONTRIBUTING.md; README-EXTENDED anchors verified (`#getting-started-verified`... check below)
+- Git description set: "Beauty advice with a mechanism, computed on-device. No accounts, no uploads."
+
+What was verified:
+- Repository scanned: `git ls-files` confirms no workspace scaffolding beyond the harmless `download/README.md`, `examples/websocket/`, `mini-services/.gitkeep` (left in place by instruction), no `.env` tracked, `.next` artifacts untracked (0 files)
+- All README/docs cross-links resolve (no broken `docs/*.md` references)
+- `.env.example` cross-checked against `src/lib/ai-providers.ts`: priority order groq → gemini → openrouter → cerebras → mistral → custom matches; custom-endpoint block and unused-DB note accurate
+- Verification battery run this session: lint 0 errors, `tsc --noEmit` clean for `src/` (3 stray errors confined to workspace `examples/` + one engine-test fixture, out of app scope), `bun scripts/test-engines.ts` 191/191, production build green (standalone, routes `/` + `_not-found` + `/api` + `/api/stylist`), service worker at `aurelia-v5` as documented
+
+Repo state: main = 37b02de + this worklog commit. Docs:self-contained for a deployment agent — start at docs/DEPLOYMENT.md §0.
