@@ -24,7 +24,7 @@ one warm, clutter-free app instead of four ad-filled ones. It is:
   providers (Groq / Gemini / OpenRouter / …) and an agent bridge (WebMCP) that
   exposes the engines to the user's own AI agent.
 
-Stack: **Next.js 15 (App Router) · TypeScript · Tailwind v4 · zustand ·
+Stack: **Next.js 16 (App Router) · TypeScript · Tailwind v4 · zustand ·
 framer-motion**. No database required; Prisma is scaffolded but unused.
 
 ## 2. Repo map (where everything lives)

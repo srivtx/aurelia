@@ -110,7 +110,7 @@ GitHub Pages is not supported (the app has API routes). Docker, VPS, rollback, a
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-Read [docs/CONTEXT.md](docs/CONTEXT.md) first — design-token rules, hydration guardrails, engine conventions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) — repo rules and verification steps.
 
 ## License
 
