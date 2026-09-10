@@ -5,7 +5,7 @@
 > the deep-tech engines, the research that drove the decisions, and how to work
 > on it safely (hydration rules!). Read this before touching code.
 >
-> Last updated: 2026-09-09 · App version: `aurelia-v4` (service worker)
+> Last updated: 2026-09-10 · App version: `aurelia-v5` (service worker)
 
 ---
 
@@ -52,18 +52,20 @@ src/
     season-analysis.tsx   # 12-season wizard + result (signal profile, palette, badge)
     outfit-lab.tsx        # outfit scorer UI (factor bars, 60-30-10 roles, season fit, diagnosis + swap)
     photo-analyzer.tsx    # photo → palette (on-device k-means) + share-target pickup
-    skin-signature.tsx    # selfie + white reference → ITA° capture flow (tap patches)
-    shade-lab.tsx         # shade verdicts vs measured skin (blend model, oxidation, ashy)
+    skin-signature.tsx    # selfie + white reference → ITA° capture flow (tap patches) — Skin tab "Skin Signature"
+    shade-lab.tsx         # shade verdicts vs measured skin (blend model, oxidation one-hour simulation, counter-move, ashy) — Makeup tab "Shade Lab"
     glow-delta.tsx        # before/after selfies → ΔE2000 outcome card (Makeup tab)
     skin-journal.tsx      # weekly zone capture + trend sparklines (incl. gloss) + milestones (Skin tab)
     ingredient-lab.tsx    # actives sequencer (AM/PM timelines, conflicts)
+    scanner-lab.tsx       # Label Scanner sheet: OCR/paste → verdict, formula read, save-to-Shelf
+    shelf.tsx             # The Shelf sheet: PAO countdown bars, duplicate banner, cost-per-use, add/remove (Skin tab)
     face-meter.tsx        # anthropometric face-shape classifier + morphing SVG
     curl-lab.tsx          # Texture Lab: hair photo → 2 strand patches → curl pattern + care plan
     passport-card.tsx     # Beauty Passport export/import (Home tab)
     tabs/                 # home · colors · makeup · skin · hair
-  data/                   # pure content: colors, palettes, seasons, actives, makeup, skincare, hair, curl-patterns, tips
+  data/                   # pure content: colors, palettes, seasons, actives, makeup, skincare, hair, curl-patterns, tips, inci-aliases, pao (PAO categories)
   lib/
-    store.ts              # zustand store (persist, skipHydration — see §4)
+    store.ts              # zustand store (persist, skipHydration — see §4; incl. shelf w/ rehydrate sanitizer)
     color-science.ts      # sRGB↔XYZ↔Lab, CIEDE2000, WCAG contrast, warmth, harmony, naming
     seasons (data)        # 12-season archetypes + classifier (signal vector → nearest archetype)
     outfit-engine.ts      # outfit scoring: hue geometry, lightness/chroma/warmth, 60-30-10
@@ -71,12 +73,14 @@ src/
     palette-extract.ts    # deterministic k-means++ in Lab space from an image
     face-shape.ts         # ratios (L/C, F/C, J/C) → 6 shapes + confidence
     skin-signature.ts     # ITA° colorimetry: von-Kries white-point correction, Lab averaging, depth/undertone
-    shade-match.ts        # Lab blend model: predicted on-skin color, ΔE2000, oxidation + ashy risk
+    shade-match.ts        # Lab blend model: predicted on-skin color, ΔE2000, oxidation + ashy risk (delegates to lib/oxidation.ts)
+    oxidation.ts          # Mirror Test V2 engine: sebum × warm lean × product family → score/risk, 1-hour drift simulation, counter-shade, INCI formula read
     glow-delta.ts         # before/after ΔE2000 per region + glow/redness/evenness summary
     skin-journal.ts       # zone metrics (a*, evenness, Sobel texture, gloss), trends, regression, milestones
     curl-classifier.ts    # fiber geometry: orientation coherence + ridge frequency + edge density → 10-class curl pattern
     label-scan.ts         # INCI parser + matcher + routine cross-check (pure, the Label Scanner engine)
     ocr.ts                # lazy tesseract.js wrapper: upscale + contrast-stretch, local worker (client-only)
+    shelf.ts              # Mirror Test V4 engine: PAO countdown (calendar-month math), ΔE2000 shade-twin + active-twin duplicate detection, cost-per-use, summary — pure, today-as-parameter
     search.ts             # global search index over the whole knowledge base
     stylist-rag.ts        # BM25-lite retrieval → grounds the stylist's system prompt
     ai-providers.ts       # provider registry + live model discovery + SSE→NDJSON (server-only)
@@ -155,7 +159,9 @@ persisted store).
 | Photo palette | `lib/palette-extract.ts` | Canvas downscale → Lab pixels → deterministic k-means++ (LCG-seeded) → ΔE2000 merge. 100% on-device. |
 | Face meter | `lib/face-shape.ts` | Anthropometric ratios → 6 shapes + confidence; live-morphing parametric SVG. |
 | Skin Signature | `lib/skin-signature.ts` | Dermatology colorimetry: 15×15 patch means, von-Kries white-point correction → CIELAB → **ITA°** (Chardon classes), hue-angle undertone, chroma; plausibility guards + confidence warnings. The measurement primitive for everything downstream. |
-| Shade match | `lib/shade-match.ts` | Lab-space α-blend per product kind (arXiv 2024 lineage) → predicted on-skin Lab, ΔE2000 visibility, shade-step depth, hue congruence, oxidation-risk heuristic (sebum × warm pull), ashy-cast detection; fit score 0-100. |
+| Shade match | `lib/shade-match.ts` | Lab-space α-blend per product kind (arXiv 2024 lineage) → predicted on-skin Lab, ΔE2000 visibility, shade-step depth, hue congruence, ashy-cast detection; fit score 0-100. Oxidation verdict delegated to `lib/oxidation.ts`. |
+| Oxidation (V2) | `lib/oxidation.ts` | The "why does my foundation turn orange by lunch" model: her sebum factor (skin-type quiz) × the shade's warm lean vs her hue (V1) × product family propensity (foundation > blush > lip) → 0–100 score + risk; **one-hour simulation** (ΔL drop, Δb rise → post-oxidation swatch); counter-move shade (½ step lighter, 7° cooler, tappable into the lab); ranked drivers + sebum-×-iron-oxide chemistry copy; `formulaOxidation()` reads scanned INCI lists for iron oxides (CI 774xx via raw text — the tokenizer strips digits), vitamin C, benzoyl peroxide. Named-mechanism heuristic, honestly worded. |
+| Shelf (V4) | `lib/shelf.ts` + `data/pao.ts` | PAO countdown per category (15 categories, EU 1223/2009 conventions, calendar-month expiry math, sealed/expiring-soon/expired states, junk-date guards); **duplicate radar** — shade twins (same category + swatch ΔE2000 < 5) and active twins (same category + same activeId); cost-per-use (price ÷ uses/week × PAO weeks); summary + share text; `buildShelfItem()` sanitization. Pure + deterministic (today is always a parameter). |
 | Glow Delta | `lib/glow-delta.ts` | Kim 2023 lineage: two independently white-corrected selfies → per-region (cheek/jaw/forehead) ΔE2000, ΔL\*/Δa\*/Δb\*, hue shift; summary glow/redness/evenness (region dispersion); region-aware copy that measures *change*, never beauty. |
 | Skin Journal | `lib/skin-journal.ts` | Closed-loop retention: 31×31 zone patches → per-pixel Lab stats (redness a\*, evenness = mean ΔE76 to zone mean, texture = Sobel edge energy, gloss = specular fraction — the hydration proxy of Soh 2025, honestly labeled) → entries (with tagged actives) → trend regression (slope/week, % change) + milestones (“redness ↓ 18% while on niacinamide”). Trends, never diagnosis. |
 | Curl classifier | `lib/curl-classifier.ts` + `data/curl-patterns.ts` | Texture Lab engine (Callender 2026 lineage): 61×61 strand patches → structure-tensor orientation coherence (magnitude-weighted doubled angle), Schmitt-trigger ridge frequency with variance gating, normalized Sobel edge density → curl index 0–100 → 10-class scale (1, 2A–C, 3A–C, 4A–C); patch guards (flat/dark/blown) + cross-patch agreement discount; per-pattern care plans (wash cadence, moisture layering, styling physics, ingredients, night) and style matches. Geometry measures texture, never “good hair”. |
@@ -179,7 +185,7 @@ Everything the project learned, in the order you should read it:
 | [`RESEARCH-COMPLIANCE.md`](./RESEARCH-COMPLIANCE.md) | Regulatory & claims safety: GDPR scope (chat route only; on-device photos out of biometric territory), EU AI Act Art. 50(1) chat disclosure (live law since Aug 2026), FDA cosmetic-vs-drug claim lines, MDR/MDCG 2019-11 boundary, FTC AI + affiliate rules, claims-language matrix, privacy-policy/disclaimer artifact list |
 | [`RESEARCH-GROWTH.md`](./RESEARCH-GROWTH.md) | Growth & monetization: TikTok/Reddit/SEO channel evidence, TWA→Play Store path (12-tester rule), iOS 4.2 reality, share-card loop benchmarks (k-factor), affiliate rates (Sephora/LTK/ShopMy), freemium conversion, $12 Deep-Report pricing, 3-phase zero-backend playbook |
 | [`RESEARCH-CYCLE-SCIENCE.md`](./RESEARCH-CYCLE-SCIENCE.md) | Temporal/context skin science: cycle-phase (acne flare STRONG / barrier MIXED), seasonal (STRONG), sleep & stress (STRONG), circadian (MODERATE), pollution (STRONG) — each with honest verdict + the "Context Layer" design (journal tags, seasonal routine tilt, correlation milestones) |
-| [`DEPLOYMENT.md`](./DEPLOYMENT.md) | Local dev, free model setup (Groq/Gemini/…), Vercel/Docker deploy, troubleshooting |
+| [`DEPLOYMENT.md`](./DEPLOYMENT.md) | The complete deployment guide incl. the AI-deployment-agent brief (repo facts, env contract, verification commands, red lines), free-model setup, GitHub → Vercel flow, Docker/VPS, post-deploy checklist, rollback, troubleshooting |
 | `worklog.md` (repo root) | Append-only multi-agent build log — every task, what was done, what was verified |
 
 ## 7. How to add things (common tasks)
@@ -211,7 +217,8 @@ node scripts/e2e-chat-fixes.mjs    # markdown rendering, chat contrast, dark tok
 node scripts/e2e-closed-loop.mjs   # Glow Delta + Skin Journal with synthetic calibrated selfies
 node scripts/e2e-texture-diagnosis.mjs # Texture Lab (synthetic hair) + Outfit diagnosis/swap + gloss trend
 node scripts/e2e-scanner.mjs       # Label Scanner: paste flow, verdicts vs routine, live re-derive on routine edit, persistence, + a real OCR smoke (CDN-dependent, SKIPs offline)
-bun scripts/test-engines.ts        # pure-engine math (glow delta, journal/gloss, curl classifier, outfit diagnosis, label scan: splitter/matcher/fuzzy/flags/scopes/dedup/headlines) — no browser
+node scripts/e2e-shelf-oxidation.mjs # Mirror Test V2+V4: Shade Lab oxidation verdict + counter-move, scanner formula read + save-to-shelf, Shelf PAO/duplicates/persistence, search wiring
+bun scripts/test-engines.ts        # pure-engine math (glow delta, journal/gloss, curl classifier, outfit diagnosis, label scan, oxidation, shelf) — no browser
 node scripts/check-providers.mjs   # operator: verify AI provider keys + resolution (replaces /api/models)
 bun run build                      # production build
 ```

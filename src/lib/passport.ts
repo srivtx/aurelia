@@ -13,6 +13,7 @@
 import { useAurelia } from "./store";
 import { seasonById } from "@/data/seasons";
 import { journalTrends, JOURNAL_ZONES } from "./skin-journal";
+import { shelfSummary } from "./shelf";
 
 export interface Passport {
   aurelia_passport: 1;
@@ -20,7 +21,9 @@ export interface Passport {
   profile: { name: string | null; skinType: string | null; vibe: string | null };
   season: { id: string; name: string; tagline: string } | null;
   skin: { type: string | null; sensitive: boolean };
+  skinSignature: { L: number; a: number; b: number; ita: number; hue: number; chroma: number; taken: string } | null;
   journal: { entries: number; weeks: number; latestDate: string | null; latestCheekRedness: number | null } | null;
+  shelf: { count: number; expired: number; expiringSoon: number; duplicates: number } | null;
   savedCount: number;
   streak: number;
 }
@@ -33,12 +36,25 @@ export function buildPassport(): Passport {
   const cheeks = JOURNAL_ZONES.filter((z) => z === "cheekL" || z === "cheekR")
     .map((z) => latest?.zones[z])
     .filter((m): m is NonNullable<typeof m> => Boolean(m));
+  const shelf = s.shelf.length ? shelfSummary(s.shelf, new Date().toISOString().slice(0, 10)) : null;
+  const sig = s.skinSignature;
   return {
     aurelia_passport: 1,
     exported: new Date().toISOString().slice(0, 10),
     profile: s.profile ? { name: s.profile.name ?? null, skinType: s.profile.skinType ?? null, vibe: s.profile.vibe ?? null } : { name: null, skinType: null, vibe: null },
     season: season ? { id: season.id, name: season.name, tagline: season.tagline } : null,
     skin: { type: s.skinResult?.base ?? s.profile?.skinType ?? null, sensitive: s.skinResult?.sensitiveOverlay ?? false },
+    skinSignature: sig
+      ? {
+          L: Math.round(sig.L * 10) / 10,
+          a: Math.round(sig.a * 10) / 10,
+          b: Math.round(sig.b * 10) / 10,
+          ita: Math.round(sig.ita),
+          hue: Math.round(sig.hue),
+          chroma: Math.round(sig.chroma * 10) / 10,
+          taken: sig.taken,
+        }
+      : null,
     journal: s.journal.length
       ? {
           entries: trends.entries,
@@ -48,6 +64,9 @@ export function buildPassport(): Passport {
             ? Math.round((cheeks.reduce((sum, m) => sum + m.a, 0) / cheeks.length) * 10) / 10
             : null,
         }
+      : null,
+    shelf: shelf
+      ? { count: shelf.total, expired: shelf.expired, expiringSoon: shelf.expiringSoon, duplicates: shelf.duplicates }
       : null,
     savedCount: s.saved.length,
     streak: s.streak?.count ?? 0,
@@ -65,7 +84,9 @@ export function passportToText(p: Passport): string {
     p.season ? `Season: ${p.season.name}` : null,
     p.skin.type ? `Skin: ${p.skin.type}${p.skin.sensitive ? " (sensitive)" : ""}` : null,
     p.profile.vibe ? `Vibe: ${p.profile.vibe}` : null,
+    p.skinSignature ? `Skin Lab: L* ${p.skinSignature.L} · ITA° ${p.skinSignature.ita} · hue ${p.skinSignature.hue}°` : null,
     p.journal ? `Skin Journal: ${p.journal.entries} entries over ${Math.round(p.journal.weeks)} weeks` : null,
+    p.shelf ? `Shelf: ${p.shelf.count} products${p.shelf.expired ? `, ${p.shelf.expired} past PAO` : ""}` : null,
     `${p.savedCount} saved looks · ${p.streak}-day streak`,
   ].filter(Boolean);
   return `My Aurelia Beauty Passport ✦ ${bits.join(" · ")} — from the Aurelia app.`;

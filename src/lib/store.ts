@@ -12,6 +12,8 @@ import type { SkinSignature } from "@/lib/skin-signature";
 import type { JournalEntry } from "@/lib/skin-journal";
 import type { CurlPatternId } from "@/lib/curl-classifier";
 import type { ScanResult } from "@/lib/label-scan";
+import type { ShelfItem, ShelfItemInput } from "@/lib/shelf";
+import { buildShelfItem, SHELF_MAX_ITEMS } from "@/lib/shelf";
 import { actives } from "@/data/actives";
 
 export type TabId = "home" | "colors" | "makeup" | "skin" | "hair";
@@ -66,6 +68,9 @@ export interface CurlResultState {
 export type MyActivesState = string[];
 /* Label Scanner — last scan verdict (lib/label-scan.ScanResult, minus raw text bloat) */
 export type ScanResultState = ScanResult;
+/* Mirror Test V4 — her product shelf (lib/shelf.ShelfItem) */
+export type ShelfItemState = ShelfItem;
+export const SHELF_MAX = SHELF_MAX_ITEMS;
 
 export interface FocusTarget {
   category: Category;
@@ -82,6 +87,7 @@ interface AureliaState {
   curlResult: CurlResultState | null;
   myActives: MyActivesState;
   scanResult: ScanResultState | null;
+  shelf: ShelfItemState[];
   profile: Profile | null;
   streak: StreakState | null;
   routine: RoutineChecks;
@@ -98,6 +104,10 @@ interface AureliaState {
   setCurlResult: (c: CurlResultState | null) => void;
   setMyActives: (ids: string[]) => void;
   setScanResult: (r: ScanResultState | null) => void;
+  addShelfItem: (input: ShelfItemInput) => ShelfItemState | null;
+  removeShelfItem: (id: string) => void;
+  markShelfOpened: (id: string, date: string) => void;
+  clearShelf: () => void;
   setProfile: (p: Profile | null) => void;
   touchStreak: () => void;
   toggleRoutine: (slot: "am" | "pm", step: number) => void;
@@ -119,6 +129,16 @@ function localDay(d = new Date()): string {
 /* persisted routine ids must be real actives — guards against junk in storage */
 const activeIdOk = (id: string) => actives.some((a) => a.id === id);
 
+/* persisted shelf entries must be well-formed — legacy junk is filtered on rehydrate */
+const shelfItemOk = (x: unknown): x is ShelfItem =>
+  typeof x === "object" && x !== null &&
+  typeof (x as ShelfItem).id === "string" &&
+  typeof (x as ShelfItem).name === "string" &&
+  typeof (x as ShelfItem).category === "string" &&
+  typeof (x as ShelfItem).addedOn === "string";
+
+const isValidDay = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d);
+
 /* exported for read-only comparisons in components (safe: same value on any
    same-day render; only differs across midnight, which is a benign re-render) */
 export const todayKey = () => localDay();
@@ -137,6 +157,7 @@ export const useAurelia = create<AureliaState>()(
       curlResult: null,
       myActives: [],
       scanResult: null,
+      shelf: [],
       profile: null,
       streak: null,
       routine: { date: "", am: [], pm: [] },
@@ -166,6 +187,32 @@ export const useAurelia = create<AureliaState>()(
       setCurlResult: (c) => set({ curlResult: c }),
       setMyActives: (ids) => set({ myActives: ids.filter((id) => activeIdOk(id)) }),
       setScanResult: (r) => set({ scanResult: r }),
+      addShelfItem: (input) => {
+        const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const item = buildShelfItem(input, id, localDay());
+        if (!item) return null;
+        const state = get();
+        /* replace on exact same name+category (re-saving a scan), else prepend, cap */
+        const dupeIdx = state.shelf.findIndex(
+          (x) => x.name === item.name && x.category === item.category,
+        );
+        const next =
+          dupeIdx >= 0
+            ? state.shelf.map((x) => (x.id === state.shelf[dupeIdx].id ? item : x))
+            : [item, ...state.shelf].slice(0, SHELF_MAX_ITEMS);
+        set({ shelf: next });
+        return item;
+      },
+      removeShelfItem: (id) => set((s) => ({ shelf: s.shelf.filter((x) => x.id !== id) })),
+      markShelfOpened: (id, date) =>
+        set((s) => ({
+          shelf: s.shelf.map((x) =>
+            x.id === id
+              ? { ...x, openedOn: x.openedOn ?? (isValidDay(date) ? date : localDay()) }
+              : x,
+          ),
+        })),
+      clearShelf: () => set({ shelf: [] }),
       setProfile: (p) => set({ profile: p }),
       touchStreak: () => {
         const today = localDay();
@@ -214,10 +261,21 @@ export const useAurelia = create<AureliaState>()(
         curlResult: state.curlResult,
         myActives: state.myActives,
         scanResult: state.scanResult,
+        shelf: state.shelf,
         profile: state.profile,
         streak: state.streak,
         routine: state.routine,
       }),
+      /* sanitize the shelf on rehydrate — legacy/junk entries are dropped
+         (default merge is kept for every other key) */
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AureliaState>;
+        return {
+          ...current,
+          ...p,
+          shelf: Array.isArray(p.shelf) ? p.shelf.filter(shelfItemOk).slice(0, SHELF_MAX_ITEMS) : [],
+        };
+      },
     }
   )
 );

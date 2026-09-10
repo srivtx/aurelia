@@ -22,12 +22,15 @@ import {
 import { Card, Chip, Eyebrow, SectionHeader, ScreenTitle, StepRow, MythCard, DotList, DoBlock, DontBlock } from "./../bits";
 import { BottomSheet, type SheetData } from "./../sheet";
 import { QuizIllustration } from "./../illustrations";
-import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon, FlaskIcon, TrendIcon, ScanIcon } from "./../icons";
+import { DropletIcon, LightbulbIcon, SunIcon, ArrowRightIcon, CheckIcon, ShareIcon, SunriseIcon, MoonStarIcon, FlaskIcon, TrendIcon, ScanIcon, MirrorIcon, ShelfIcon } from "./../icons";
 import { useAurelia, todayKey } from "@/lib/store";
 import { shareCard } from "@/lib/share";
 import { IngredientLab } from "../ingredient-lab";
 import { SkinJournal } from "../skin-journal";
 import { ScannerLab } from "../scanner-lab";
+import { SkinSignatureCapture } from "../skin-signature";
+import { Shelf } from "../shelf";
+import { shelfSummary } from "@/lib/shelf";
 
 const ACCENT = "var(--cat-skin)";
 
@@ -400,11 +403,12 @@ function IngredientDetail({ ing }: { ing: (typeof ingredients)[0] }) {
 /* ---------- Tab ---------- */
 
 export function SkinTab() {
-  const { skinResult, setSkinResult, focus, setFocus } = useAurelia();
+  const { skinResult, setSkinResult, skinSignature, shelf, focus, setFocus } = useAurelia();
   const [sheet, setSheet] = useState<SheetData | null>(null);
-  const [sheetBody, setSheetBody] = useState<"type" | "ing" | "lab" | "journal" | "scanner">("type");
+  const [sheetBody, setSheetBody] = useState<"type" | "ing" | "lab" | "journal" | "scanner" | "signature" | "shelf">("type");
   const [typeDetail, setTypeDetail] = useState<SkinTypeId | null>(null);
   const [ingDetail, setIngDetail] = useState<(typeof ingredients)[0] | null>(null);
+  const shelfS = useMemo(() => (shelf.length ? shelfSummary(shelf, todayKey()) : null), [shelf]);
 
   const openType = (id: SkinTypeId) => {
     setTypeDetail(id);
@@ -430,6 +434,14 @@ export function SkinTab() {
     setSheetBody("journal");
     setSheet({ id: "skin-journal", category: "skin", eyebrow: "Measured on-device", title: "The Skin Journal", subtitle: "Weekly zones → trends, not diagnoses", accent: ACCENT });
   };
+  const openSignature = () => {
+    setSheetBody("signature");
+    setSheet({ id: "skin-signature", category: "skin", eyebrow: "Dermatology-grade colorimetry", title: "Skin Signature", subtitle: "One selfie + something white → your Lab numbers", accent: ACCENT });
+  };
+  const openShelf = () => {
+    setSheetBody("shelf");
+    setSheet({ id: "the-shelf", category: "skin", eyebrow: "Mirror Test · your products", title: "The Shelf", subtitle: "PAO countdown + near-duplicate radar", accent: ACCENT });
+  };
 
   /* deep-open from global search (e.g. "oily skin", "niacinamide") */
   useEffect(() => {
@@ -439,6 +451,12 @@ export function SkinTab() {
       setFocus(null);
       if (id === "lab-ingredients") {
         openLab();
+      } else if (id === "lab-signature") {
+        openSignature();
+      } else if (id === "lab-shelf") {
+        openShelf();
+      } else if (id === "label-scanner") {
+        openScanner();
       } else if (id.startsWith("skin-")) {
         openType(id.replace("skin-", "") as SkinTypeId);
       } else if (id.startsWith("ing-")) {
@@ -469,6 +487,30 @@ export function SkinTab() {
         <RoutineChecklist />
       </section>
 
+      {/* Skin Signature — the colorimeter (Mirror Test V1) */}
+      <section className="mt-9">
+        <SectionHeader eyebrow="Measure, don't guess" title="Your skin, in Lab numbers" accent={ACCENT} />
+        <Card onClick={openSignature} ariaLabel="Open the skin signature measurement" className="p-4">
+          <div className="flex items-center gap-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "var(--sage-soft)", color: "var(--cat-skin)" }}>
+              <MirrorIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[15px] font-bold text-ink leading-tight">Skin Signature</p>
+                {skinSignature && <Chip color={ACCENT}>{`L* ${skinSignature.L.toFixed(0)} · ITA° ${skinSignature.ita.toFixed(0)}`}</Chip>}
+              </div>
+              <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">
+                {skinSignature
+                  ? `Measured ${skinSignature.taken} — feeds the Shade Lab, your passport & season evidence`
+                  : "One selfie with something white → ITA° depth, undertone hue, chroma. Nothing uploaded"}
+              </p>
+            </div>
+            <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+          </div>
+        </Card>
+      </section>
+
       {/* Ingredient Lab */}
       <section className="mt-9">
         <SectionHeader eyebrow="The Ingredient Lab" title="Do they clash?" accent={ACCENT} />
@@ -496,6 +538,31 @@ export function SkinTab() {
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-bold text-ink leading-tight">Scan a label</p>
               <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">Photograph an INCI list — OCR on your phone, verdict against your routine</p>
+            </div>
+            <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
+          </div>
+        </Card>
+      </section>
+
+      {/* The Shelf — Mirror Test V4: PAO + duplicates */}
+      <section className="mt-3">
+        <Card onClick={openShelf} ariaLabel="Open your product shelf" className="p-4">
+          <div className="flex items-center gap-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-[14px] shrink-0" style={{ background: "var(--sage-soft)", color: "var(--cat-skin)" }}>
+              <ShelfIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[15px] font-bold text-ink leading-tight">Your shelf</p>
+                {shelfS && (
+                  <Chip color={shelfS.expired ? "var(--error)" : shelfS.expiringSoon ? "var(--gold)" : ACCENT}>
+                    {shelfS.expired ? `${shelfS.expired} past PAO` : shelfS.expiringSoon ? `${shelfS.expiringSoon} expiring soon` : `${shelfS.total} fresh`}
+                  </Chip>
+                )}
+              </div>
+              <p className="text-[12px] leading-[16px] text-ink-3 mt-0.5">
+                PAO countdown per product + near-duplicate radar (ΔE2000 &lt; 5) — offline, exports with your Passport
+              </p>
             </div>
             <ArrowRightIcon width={16} height={16} className="text-ink-3 shrink-0" />
           </div>
@@ -645,6 +712,8 @@ export function SkinTab() {
         {sheetBody === "lab" && <IngredientLab />}
         {sheetBody === "journal" && <SkinJournal />}
         {sheetBody === "scanner" && <ScannerLab />}
+        {sheetBody === "signature" && <SkinSignatureCapture />}
+        {sheetBody === "shelf" && <Shelf />}
       </BottomSheet>
     </div>
   );

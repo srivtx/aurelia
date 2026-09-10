@@ -1,9 +1,11 @@
-# Deploying Aurelia — and wiring free AI models
+# Deploying Aurelia — the complete guide (for humans *and* the deployment agent)
 
-Aurelia is a **Next.js 15 App Router** app (TypeScript, Tailwind v4). It works fully
-out of the box with the built-in **Aurelia Cloud** stylist — no keys, no config.
-This guide is for self-hosting and for plugging in **free third-party models**
-(Groq, Gemini, OpenRouter, Cerebras, Mistral, or your own local LLM).
+Aurelia is a **Next.js 16 App Router** PWA (TypeScript, Tailwind v4, Turbopack).
+It works fully out of the box with the built-in **Aurelia Cloud** stylist — no
+keys, no config, no database. This guide covers local development, wiring free
+AI models (Groq, Gemini, OpenRouter, Cerebras, Mistral, or a local LLM),
+deploying from GitHub to Vercel / Docker / any VPS, post-deploy verification,
+rollback, and troubleshooting.
 
 > **Who chooses the model? The server, not the user.** The provider/model is an
 > *operator* decision, resolved from env vars at request time. End users never
@@ -12,7 +14,98 @@ This guide is for self-hosting and for plugging in **free third-party models**
 
 > Companion docs: [`CONTEXT.md`](./CONTEXT.md) (codebase map) ·
 > [`RESEARCH-DEEPTECH.md`](./RESEARCH-DEEPTECH.md) (why these providers/APIs) ·
-> [`RESEARCH-PWA-LAUNCH.md`](./RESEARCH-PWA-LAUNCH.md) + [`RESEARCH-BEAUTY-APP-UX.md`](./RESEARCH-BEAUTY-APP-UX.md)
+> [`RESEARCH-PWA-LAUNCH.md`](./RESEARCH-PWA-LAUNCH.md) (PWA quality bar) ·
+> [`RESEARCH-COMPLIANCE.md`](./RESEARCH-COMPLIANCE.md) (privacy/claims rules)
+
+---
+
+## 0. AI deployment-agent brief (read this first, then act)
+
+If you are an automated agent tasked with deploying this repository, this
+section is your complete context. Everything else in the document is supporting
+detail.
+
+**What you are deploying.** A single Next.js 16 App Router application — a
+mobile-first beauty/style PWA. Everything renders from one page (`/`) with
+client-side tab routing; two API routes provide the AI stylist. There is **no
+database in the default configuration** (Prisma scaffolding exists but is unused
+by the app — do not run migrations, do not provision a DB).
+
+**Repository facts:**
+
+| Fact | Value |
+|---|---|
+| Repo | `https://github.com/srivtx/aurelia` (branch `main` is the trunk) |
+| Runtime | Node.js 20+ (or Bun 1.1+) |
+| Framework | Next.js 16.1.3, App Router, Turbopack build |
+| Language | TypeScript (strict for `src/`) |
+| Styling | Tailwind CSS 4 with a custom token system (no Tailwind config file needed) |
+| State | Zustand + localStorage persist (hydration-safe: `skipHydration` + manual rehydrate) |
+| Routes | `/` (static, the whole app) · `/_not-found` (static) · `/api` (health) · `/api/stylist` (Node runtime, streaming) |
+| Build output | `.next/standalone` — self-contained (public/ + static assets are copied into it by `npm run build`) |
+| External deps at runtime | None required. Optional: one LLM provider key. OCR model files load from jsDelivr CDN on first use (lazy, cached, with an offline paste fallback). |
+| Secrets | Only provider API keys, server-side env vars. **Never** commit `.env`/`.env.local`. |
+
+**The env contract (all optional):**
+
+| Var | Purpose |
+|---|---|
+| `AI_PROVIDER` | Pin one: `groq \| gemini \| openrouter \| cerebras \| mistral \| custom \| zai` |
+| `AI_MODEL` | Pin a model id at that provider |
+| `GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `CEREBRAS_API_KEY` / `MISTRAL_API_KEY` | Provider keys (pick any one or several — priority order is groq → gemini → openrouter → cerebras → mistral → custom) |
+| `AI_BASE_URL` + `AI_API_KEY` + `AI_MODEL` | Custom OpenAI-compatible server (Ollama, LM Studio, vLLM) |
+| `DATABASE_URL` | Legacy scaffold; unused by the app — safe to omit |
+
+No var is exposed to the browser. With **zero** vars set, the app deploys and
+runs at full functionality on the built-in provider.
+
+**Your deploy procedure (Vercel path, recommended):**
+
+1. Push/confirm `main` on GitHub (the repo is already connected to
+   `github.com/srivtx/aurelia`; identity `srivtx`).
+2. Vercel: *New Project → Import `srivtx/aurelia`*. Framework auto-detects as
+   Next.js. **No build settings needed** — accept defaults.
+3. Environment variables: add none (built-in model) or only server-side keys
+   from the table above. Never mark any var for "Client" exposure.
+4. Deploy, then run the post-deploy checklist (§8) against the live URL.
+5. Commit nothing to the repo. Report the URL, the resolved provider, and the
+   checklist results.
+
+**Your verification commands (run in the repo, dev or CI):**
+
+```bash
+bun install
+bun run lint                 # must exit 0
+bunx tsc --noEmit            # src/ must be clean
+bun run build                # must succeed; routes: /, /_not-found, /api, /api/stylist
+bun scripts/test-engines.ts  # pure-engine suite — currently 191/191
+bun scripts/e2e-shelf-oxidation.mjs  # needs dev server on :3000 — 40/40
+node scripts/check-providers.mjs     # operator: which provider env resolves to
+```
+
+Full e2e battery (each needs the dev server on :3000): `e2e-chat-fixes` (22),
+`e2e-deep-tech`, `e2e-new-features`, `e2e-closed-loop` (32),
+`e2e-texture-diagnosis` (40), `e2e-scanner` (27, includes a live OCR smoke),
+`e2e-shelf-oxidation` (40), plus `hydration-verify.mjs` (must report 0 hydration
+errors). The lone 404 console error in `e2e-new-features` is the intentional
+branded-404 test — expected.
+
+**Red lines — do not do any of these:**
+
+- Do not add a database, auth, analytics, or any network call that profiles
+  users (the "no tracking" charter is a published product claim).
+- Do not move photo/OCR/label processing server-side. Every measurement runs
+  on-device by design; the privacy claims in the app copy are literal.
+- Do not expose the AI provider or model identity to the client (no
+  `NEXT_PUBLIC_*` for keys, no provider names in user-facing copy or errors).
+- Do not edit `worklog.md` history; append only.
+- Do not "fix" the CSS var aliases (`--rose`, `--sage-soft`, `--ink-2`…) — they
+  are load-bearing (see CONTEXT.md "alias pitfall").
+
+**Current state (2026-09-10, after the Mirror Test V2+V4 session):** all four
+Mirror-Test verdicts live (Skin Signature V1, Oxidation V2, Label Scanner V3,
+Shelf/PAO V4), closed beauty loop complete, 191 engine checks + full e2e
+battery green, lint/tsc/build clean, service worker at `aurelia-v5`.
 
 ---
 
@@ -25,15 +118,17 @@ bun install        # or npm install / pnpm install
 bun run dev        # http://localhost:3000
 ```
 
-Requirements: Node 18+ (or Bun 1.1+). No database needed — all content and engines
-are pure TypeScript; the user profile lives in the browser (localStorage + PWA storage).
+Requirements: Node 18+ (or Bun 1.1+). No database needed — all content and
+engines are pure TypeScript; the user profile lives in the browser
+(localStorage + PWA storage).
 
 ## 2. Free AI models — the 2-minute setup
 
-The stylist chat talks to `/api/stylist`, which resolves the provider **server-side**:
+The stylist chat talks to `/api/stylist`, which resolves the provider
+**server-side**:
 
-1. **Get a free key** from any provider below (all have free tiers, no credit card
-   except where noted).
+1. **Get a free key** from any provider below (all have free tiers, no credit
+   card except where noted).
 2. **Create `.env.local`** in the repo root (see `.env.example`):
 
    ```bash
@@ -75,10 +170,10 @@ the server console, never to the client.
 node scripts/check-providers.mjs
 ```
 
-Prints which provider the current env resolves to, and live-pings each configured
-provider's `/models` endpoint to confirm the key works. This replaces the old
-public `/api/models` endpoint (removed — provider identity is no longer exposed
-over HTTP).
+Prints which provider the current env resolves to, and live-pings each
+configured provider's `/models` endpoint to confirm the key works. This replaces
+the old public `/api/models` endpoint (removed — provider identity is no longer
+exposed over HTTP).
 
 ### Provider cheat-sheet (verified 2026-09, see RESEARCH-DEEPTECH.md §2)
 
@@ -117,20 +212,27 @@ bun run start      # serves the standalone build
 
 The build copies `public/` and `.next/static` into `.next/standalone`, so the
 folder is portable: `node .next/standalone/server.js` runs anywhere Node runs.
+`PORT` and `HOSTNAME` env vars configure the listener (defaults: 3000,
+0.0.0.0).
 
-## 4. Deploy to Vercel (easiest)
+## 4. Deploy from GitHub to Vercel (easiest, recommended)
 
-1. Push the repo to GitHub.
+1. The repo lives at `github.com/srivtx/aurelia`, branch `main`.
 2. [vercel.com/new](https://vercel.com/new) → import the repo (framework is
-   auto-detected as Next.js; zero config needed).
+   auto-detected as Next.js; zero config needed — do not add a `vercel.json`).
 3. Add the env vars: **Project → Settings → Environment Variables** → add e.g.
    `GROQ_API_KEY` (and friends). They are server-only — never add them with the
    "Client" exposure flag Vercel offers for `NEXT_PUBLIC_*` names.
 4. Deploy. PWA requirements are satisfied automatically (HTTPS, `manifest.json`,
    `sw.js` are served from `public/`).
 
+After the first deploy, every push to `main` auto-deploys. That is the intended
+GitHub → production flow: **commit to main → push → Vercel builds → verify**.
+
 > Service-worker updates: after each deploy, returning users get an in-app
-> "A fresh new Aurelia is ready → Update" toast (built-in SW update flow).
+> "A fresh new Aurelia is ready → Update" toast (built-in SW update flow). Bump
+> `VERSION` in `public/sw.js` when you want to force a cache refresh — the SW
+> currently runs `aurelia-v5`.
 
 ## 5. Deploy anywhere else (Docker / VPS / Caddy)
 
@@ -151,22 +253,67 @@ CMD ["node", "server.js"]
 Run it behind any TLS reverse proxy (Caddy config lives in `Caddyfile` in this
 repo as a reference). Add your keys with `-e GROQ_API_KEY=...`.
 
-## 6. Android share-to-analyze
+A GitHub Actions option if you prefer CI-built images:
 
-On Android, once the PWA is installed, the OS share sheet lists **Aurelia**:
-share any image (Pinterest screenshot, store photo) and it lands directly in the
-on-device Photo Palette analyzer (k-means in CIELAB — never uploaded). No server
-config is needed — the service worker handles it (`POST /share-target`).
+```yaml
+# .github/workflows/docker.yml (example — only if you want image CI)
+name: docker
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run build
+      # then push .next/standalone into your registry/image of choice
+```
 
-On desktop Chromium, "Open with → Aurelia" is registered for images via
-`file_handlers`. iOS has no Share Target; the app offers Web-Share **out** cards
-instead.
+## 6. Deploy via GitHub Pages? — No.
 
-## 7. Troubleshooting
+The app is a server-rendered Next.js application with API routes; GitHub Pages
+only serves static files and would break `/api/stylist`. Use Vercel (§4) or any
+Node host (§5). If you ever want a purely static export, the stylist chat would
+need a separate backend — out of scope today.
+
+## 7. Post-deploy verification checklist
+
+Run against the live URL (replace `https://YOUR-DEPLOY`):
+
+| # | Check | Expected |
+|---|---|---|
+| 1 | `curl -s https://YOUR-DEPLOY/api` | 200 with health payload |
+| 2 | Load `/` on a phone browser | App shell + 5-tab nav render, no console errors |
+| 3 | `https://YOUR-DEPLOY/manifest.json` | 200, valid JSON (PWA installable) |
+| 4 | `https://YOUR-DEPLOY/sw.js` | 200, `Content-Type: application/javascript` |
+| 5 | Open Ask Aurelia, send a message | Reply streams token-by-token (mark-down rendered) |
+| 6 | Offline: load app, cut network, reload | App shell serves from cache (SW working) |
+| 7 | Android share sheet → share an image to Aurelia | Photo Palette analyzer opens (installed PWA) |
+| 8 | DevTools → Application → Storage | localStorage `aurelia-store` persists profile; no third-party storage, no cookies |
+| 9 | Scan a label (Label Scanner) | OCR loads from CDN, verdict renders; paste path works offline |
+| 10 | Provider check (if keys set) | `node scripts/check-providers.mjs` locally against same env: all configured providers ✓ |
+
+## 8. Rollback
+
+- **Vercel:** Deployments → any previous deployment → ⋯ → **Promote to
+  Production**. Instant, no rebuild. The repo itself is never touched.
+- **Docker/VPS:** redeploy the previous image tag, or `git checkout <previous
+  tag> && bun run build && bun run start`.
+- **Service worker:** returning users update on next launch (the update toast).
+  If you must force it, bump `VERSION` in `public/sw.js` and redeploy.
+- **Bad env var:** just fix the value and redeploy — the app never requires a
+  key to boot, so a wrong key degrades to the built-in model rather than an
+  outage.
+
+## 9. Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
-| Chat answers but `node scripts/check-providers.mjs` shows ✗ | Provider key rejected — the route is silently serving the built-in model. Fix the key in `.env.local` and restart. |
+| Chat answers but `node scripts/check-providers.mjs` shows ✗ | Provider key rejected — the route is silently serving the built-in model. Fix the key in `.env.local` / Vercel env and restart/redeploy. |
 | `429` rate limit | Free-tier limit hit. Wait a minute, set a second provider key as a fallback, or pin a faster model via `AI_MODEL`. |
 | `401` / key rejected | Key revoked or typo'd — re-copy from the provider console, then re-run the check script. |
 | Reply is empty / stream interrupted | Provider hiccup — the route already retried with the built-in model; if it persists, check the server console for `[/api/stylist]` logs. |
@@ -174,8 +321,10 @@ instead.
 | PWA won't install | Serve over HTTPS and visit twice (install prompt heuristics). |
 | Share target missing | Android + installed PWA only (Chromium). |
 | Label Scanner says "OCR engine couldn't load" | tesseract.js worker + `eng` model load from a CDN (jsDelivr) on first use, then cache. On a first-run offline device the camera path fails gracefully — **paste the list instead** (fully offline, same verdict engine). Nothing about the photo is ever uploaded; OCR runs in a local web worker. |
+| Users see stale content after a deploy | Service-worker cache — bump `VERSION` in `public/sw.js` and redeploy; the update toast appears on next launch. |
+| Hydration errors in the console | Should never happen (0 in all test runs). If you see one, run `node scripts/hydration-verify.mjs` locally — it reproduces the timezone + persisted-state case; do not ship until it reports 0. |
 
-## 8. Security notes
+## 10. Security notes
 
 - Provider keys live only in server env vars; no key is ever bundled, logged, or
   sent to the client.
@@ -186,7 +335,12 @@ instead.
 - If an external provider fails, the server falls back to the built-in model
   silently — no provider details ever surface in the UI.
 - The stylist API sanitizes + caps all inputs (20 messages, 2000 chars each).
-- Photo analysis, face meter, season analysis and outfit scoring are **100%
-  on-device** — no network calls at all.
-- The user profile (Beauty Passport) is exportable JSON the user owns; the app
-  never syncs it anywhere.
+- Photo analysis, face meter, season analysis, label OCR and outfit scoring are
+  **100% on-device** — no network calls at all. The photo never leaves the
+  device; OCR runs in a local web worker (CDN only delivers the engine files).
+- The user profile (Beauty Passport, shelf, journal) is exportable JSON the
+  user owns; the app never syncs it anywhere. No cookies, no analytics, no
+  third-party trackers.
+- See `docs/RESEARCH-COMPLIANCE.md` for the GDPR/AI-Act/claims analysis behind
+  these choices (e.g. the EU AI Act Art. 50(1) "you are chatting with an AI"
+  disclosure line in the chat UI).

@@ -363,6 +363,19 @@ export const ScanIcon = (props: P) => (
   </svg>
 );
 
+export const ShelfIcon = (props: P) => (
+  <svg {...base(props)}>
+    {/* a vanity shelf: two jars + the shelf line */}
+    <rect x="4.5" y="4.5" width="6.2" height="7" rx="1.6" />
+    <path d="M6 4.5V3.2h3.2v1.3" strokeWidth="1.4" />
+    <rect x="13.3" y="6.5" width="6.2" height="5" rx="1.6" />
+    <path d="M14.8 6.5V5.2h3.2v1.3" strokeWidth="1.4" />
+    <path d="M3 15.5h18" />
+    <path d="M5 18.5h14" opacity="0.55" strokeWidth="1.4" />
+  </svg>
+);
+
+
 export const TextIcon = (props: P) => (
   <svg {...base(props)}>
     <path d="M5 7.5V5.5h14v2M12 5.5v13M9 18.5h6" />

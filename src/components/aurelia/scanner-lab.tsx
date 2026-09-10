@@ -5,7 +5,9 @@
    ------------------------------------------------------------
    Photo of an INCI label (on-device OCR, tesseract.js lazy) OR
    pasted text → alias matcher → the existing conflict/synergy
-   matrix, crossed against HER saved routine.
+   matrix, crossed against HER saved routine. Every scan can
+   join her Shelf (Mirror Test V4: PAO + duplicates), and the
+   ingredient list gets an oxidation formula read (V2).
    Privacy: OCR runs in a local web worker — the photo never
    leaves the device. Honest by design: fuzzy matches are
    labeled, the raw text is always one tap away to verify.
@@ -14,14 +16,17 @@
 import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { actives, activeById } from "@/data/actives";
+import { paoCategories, paoById } from "@/data/pao";
 import {
   scanLabel,
   scanHeadline,
   suggestRoutine,
   type ScanResult,
 } from "@/lib/label-scan";
+import { formulaOxidation } from "@/lib/oxidation";
+import { findDuplicates } from "@/lib/shelf";
 import { ocrFile, OcrError, type OcrProgress } from "@/lib/ocr";
-import { useAurelia } from "@/lib/store";
+import { useAurelia, todayKey } from "@/lib/store";
 import { Card, Chip, Eyebrow } from "./bits";
 import {
   AlertIcon,
@@ -30,6 +35,7 @@ import {
   CheckIcon,
   FlaskIcon,
   ScanIcon,
+  ShelfIcon,
   TextIcon,
 } from "./icons";
 
@@ -46,6 +52,155 @@ const CONFIDENCE_HINT: Record<string, string> = {
   family: "family",
   fuzzy: "fuzzy",
 };
+
+/* smart default category from what the scan matched (V4 wiring) */
+function suggestCategory(result: ScanResult): string {
+  const ids = result.matched.map((m) => m.id);
+  if (ids.includes("spf")) return "sunscreen";
+  if (ids.includes("benzoyl") || ids.includes("bha")) return "serum"; // targeted treatments
+  if (ids.length > 0) return "serum"; // actives-heavy → leave-on serum by default
+  return "moisturizer";
+}
+
+/* ---------- save this scan to her Shelf (Mirror Test V4) ---------- */
+
+function SaveToShelfCard({ result }: { result: ScanResult }) {
+  const { addShelfItem, shelf, showToast } = useAurelia();
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState(() => suggestCategory(result));
+  const [price, setPrice] = useState("");
+  const [uses, setUses] = useState("");
+  const [swatch, setSwatch] = useState("");
+  const [opened, setOpened] = useState(false);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+
+  const onShelf = savedKey
+    ? shelf.some((x) => x.id === savedKey || (x.name === savedKey && x.category === category))
+    : false;
+
+  const save = () => {
+    const label = (name.trim() || `${paoById(category).label} (scanned)`).slice(0, 40);
+    const item = addShelfItem({
+      name: label,
+      category,
+      openedOn: opened ? todayKey() : null,
+      price: price ? Number(price) : null,
+      usesPerWeek: uses ? Number(uses) : null,
+      swatchHex: swatch.trim() || null,
+      activeId: result.matched[0]?.id ?? null,
+      scanned: true,
+    });
+    if (!item) return;
+    setSavedKey(label);
+    const others = shelf.filter((x) => x.id !== item.id);
+    const hit = findDuplicates([...others, item]).find((d) => d.aId === item.id || d.bId === item.id);
+    showToast(
+      hit
+        ? hit.basis === "shade"
+          ? "On your shelf — heads up: near-identical shade already there ✦"
+          : "On your shelf — you already own something doing this job ✦"
+        : "Saved to your shelf — PAO clock armed ✦",
+    );
+  };
+
+  if (onShelf && !name && !price && !uses && !swatch) {
+    return (
+      <Card className="p-3.5 flex items-center gap-2.5 bg-sage-soft">
+        <CheckIcon width={17} height={17} className="text-sage shrink-0" strokeWidth={2.4} />
+        <p className="text-[12.5px] font-semibold text-ink min-w-0">On your shelf — countdown running in the Shelf sheet</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center gap-2">
+        <ShelfIcon width={16} height={16} className="text-cat-skin" />
+        <p className="text-[13.5px] font-bold text-ink">Save to your Shelf</p>
+        <span className="ml-auto text-[11px] text-ink-3">PAO clock + duplicate check</span>
+      </div>
+      <div className="space-y-3 mt-3">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={`${paoById(category).label} (scanned)`}
+          aria-label="Product name"
+          className="aurelia-input w-full h-10 rounded-[12px] px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+        />
+        <div className="flex flex-wrap gap-1.5">
+          {paoCategories.map((c) => {
+            const on = c.id === category;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCategory(c.id)}
+                aria-pressed={on}
+                className="press h-7 px-2.5 rounded-full text-[11px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-rose/40 transition-colors"
+                style={
+                  on
+                    ? { background: "var(--cat-skin)", color: "white" }
+                    : { background: "var(--surface-muted)", color: "var(--ink-2)", border: "1px solid var(--line-soft)" }
+                }
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            value={price}
+            onChange={(e) => setPrice(e.target.value.replace(/[^\d.]/g, ""))}
+            inputMode="decimal"
+            placeholder="Price"
+            aria-label="Price"
+            className="aurelia-input h-10 rounded-[12px] px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+          />
+          <input
+            value={uses}
+            onChange={(e) => setUses(e.target.value.replace(/[^\d]/g, ""))}
+            inputMode="numeric"
+            placeholder="Uses/wk"
+            aria-label="Uses per week"
+            className="aurelia-input h-10 rounded-[12px] px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+          />
+          <input
+            value={swatch}
+            onChange={(e) => setSwatch(e.target.value)}
+            placeholder="#A84A62"
+            aria-label="Swatch hex color for duplicate detection"
+            spellCheck={false}
+            className="aurelia-input h-10 rounded-[12px] px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+          />
+        </div>
+        {swatch && /^#[0-9a-fA-F]{6}$/.test(swatch.trim()) && (
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full border border-line shrink-0" style={{ background: swatch.trim() }} aria-label="Swatch preview" />
+            <p className="text-[11.5px] text-ink-3">Swatch — powers the near-identical duplicate check (ΔE2000 &lt; 5)</p>
+          </div>
+        )}
+        <label className="flex items-center gap-2.5 press">
+          <input
+            type="checkbox"
+            checked={opened}
+            onChange={(e) => setOpened(e.target.checked)}
+            className="w-4.5 h-4.5 accent-[var(--cat-skin)]"
+            aria-label="Already opened"
+          />
+          <span className="text-[13px] text-ink-2">Already opened (starts the PAO countdown today)</span>
+        </label>
+        <button
+          onClick={save}
+          className="press w-full h-11 rounded-full text-[14px] font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+          style={{ background: "var(--cat-skin)" }}
+        >
+          {onShelf ? "Update shelf entry" : "Save to shelf"}
+        </button>
+        <p className="text-[10.5px] leading-[15px] text-ink-3">{paoById(category).note}</p>
+      </div>
+    </Card>
+  );
+}
 
 /* ---------- her routine editor (shared by capture + result) ---------- */
 
@@ -146,6 +301,13 @@ export function ScannerLab() {
   const result = view === "result" ? liveResult : null;
   const headline = result ? scanHeadline(result, myActives.length) : null;
   const meta = result ? STATUS_META[result.status] : null;
+
+  /* Mirror Test V2 — the oxidation formula read on the same tokens
+     (raw text catches CI 774xx codes the tokenizer digit-strips) */
+  const formulaRead = useMemo(
+    () => (result ? formulaOxidation(result.ingredients, result.text) : null),
+    [result],
+  );
 
   /* photo → OCR → scan */
   const handleFile = async (file: File | undefined) => {
@@ -438,6 +600,27 @@ export function ScannerLab() {
               ))}
             </div>
           )}
+
+          {/* formula read — Mirror Test V2 on the ingredient list */}
+          {formulaRead && (
+            <div className="rounded-[14px] border border-gold/30 bg-gold/10 p-3.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Eyebrow color="var(--gold)">Formula read · can oxidize</Eyebrow>
+                <Chip color="var(--gold)">{Math.round(formulaRead.propensity * 100)}% signal</Chip>
+              </div>
+              <div className="space-y-2 mt-2">
+                {formulaRead.notes.map((n, i) => (
+                  <p key={i} className="text-[12.5px] leading-[17px] text-ink-2">{n}</p>
+                ))}
+                <p className="text-[11.5px] leading-[16px] text-ink-3">
+                  Oily skin? Check this shade in the Shade Lab (Makeup tab) — it simulates the one-hour drift before you buy.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* save to her Shelf — Mirror Test V4 */}
+          <SaveToShelfCard result={result} />
 
           {/* raw text */}
           <div className="rounded-[14px] border border-line-soft p-3.5">

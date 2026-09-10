@@ -11,10 +11,11 @@
 
 import { useMemo, useState } from "react";
 import { hexToLab, labToHex } from "@/lib/color-science";
-import { matchShade, oilyFactorFromSkinType, type ProductKind, type ShadeVerdict } from "@/lib/shade-match";
+import { matchShade, oilyFactorFromSkinType, predictOnSkin, type ProductKind, type ShadeVerdict } from "@/lib/shade-match";
+import { oxidationVerdict, type OxidationVerdict } from "@/lib/oxidation";
 import { useAurelia } from "@/lib/store";
 import { Card, Chip, Eyebrow } from "./bits";
-import { MirrorIcon, FlaskIcon } from "./icons";
+import { MirrorIcon, FlaskIcon, RefreshIcon } from "./icons";
 
 const KINDS: { id: ProductKind; label: string; alpha: string }[] = [
   { id: "foundation", label: "Foundation", alpha: "α 0.72" },
@@ -61,6 +62,14 @@ export function ShadeLab() {
     const shade = hexToLab(shadeHex);
     const skin = { L: skinSignature.L, a: skinSignature.a, b: skinSignature.b };
     return matchShade(skin, shade, kind, oily);
+  }, [skinSignature, shadeHex, kind, oily]);
+
+  /* Mirror Test V2 — the standalone oxidation verdict on the same inputs */
+  const oxv: OxidationVerdict | null = useMemo(() => {
+    if (!skinSignature) return null;
+    const shade = hexToLab(shadeHex);
+    const skin = { L: skinSignature.L, a: skinSignature.a, b: skinSignature.b };
+    return oxidationVerdict(skin, shade, kind, predictOnSkin(skin, shade, kind), oily);
   }, [skinSignature, shadeHex, kind, oily]);
 
   const skinHex = skinSignature ? labToHex({ L: skinSignature.L, a: skinSignature.a, b: skinSignature.b }) : null;
@@ -205,24 +214,84 @@ export function ShadeLab() {
             </p>
           </Card>
 
-          {/* oxidation */}
-          <Card className="p-4">
-            <Eyebrow color={verdict.oxidation.risk === "high" ? "var(--error)" : verdict.oxidation.risk === "medium" ? "var(--gold)" : "var(--cat-colors)"}>
-              Oxidation risk · {verdict.oxidation.risk}
-            </Eyebrow>
-            <p className="text-[12.5px] leading-[18px] text-ink-3 mt-1.5">{verdict.oxidation.note}</p>
-            {verdict.ashy && verdict.ashyNote && (
-              <p className="text-[12.5px] leading-[18px] text-ink-2 mt-2 rounded-[12px] bg-honey-soft p-2.5">{verdict.ashyNote}</p>
-            )}
-            {skinType && (
-              <p className="text-[11px] text-ink-3 mt-2">Sebum factor from your {skinType} skin profile{skinType.toLowerCase().includes("oily") || skinType.toLowerCase().includes("combination") ? " — the classic oxidizer" : ""}.</p>
-            )}
-          </Card>
+          {/* oxidation — Mirror Test V2 */}
+          {oxv && (
+            <Card className="p-4">
+              <Eyebrow color={oxv.risk === "high" ? "var(--error)" : oxv.risk === "medium" ? "var(--gold)" : "var(--cat-colors)"}>
+                Oxidation · {oxv.headline}
+              </Eyebrow>
+              <div className="flex items-center gap-3 mt-2.5">
+                {/* score meter */}
+                <div className="shrink-0 grid place-items-center w-14 h-14 rounded-full border-[5px]" style={{ borderColor: oxv.risk === "high" ? "var(--error)" : oxv.risk === "medium" ? "var(--gold)" : "var(--cat-colors)" }} aria-label={`Oxidation score ${oxv.score} out of 100`}>
+                  <span className="font-display text-[16px]">{oxv.score}</span>
+                </div>
+                <p className="text-[12.5px] leading-[18px] text-ink-3 min-w-0">{oxv.note}</p>
+              </div>
+
+              {/* the one-hour simulation */}
+              <div className="mt-3 rounded-[12px] bg-surface-muted p-3">
+                <p className="text-[11px] uppercase tracking-wider text-ink-3">The one-hour simulation</p>
+                <div className="flex items-center gap-2.5 mt-2">
+                  <div className="flex rounded-[10px] overflow-hidden border border-line-soft shrink-0" aria-label="Fresh application versus oxidized shift">
+                    <div className="w-11 h-11 grid place-items-center" style={{ background: predictedHex ?? "var(--surface)" }}>
+                      <span className="text-[9px] font-bold" style={{ color: readable(predictedHex ?? "#FFFFFF") }}>fresh</span>
+                    </div>
+                    <div className="w-11 h-11 grid place-items-center" style={{ background: oxv.postOxidationHex }}>
+                      <span className="text-[9px] font-bold" style={{ color: readable(oxv.postOxidationHex) }}>+1h</span>
+                    </div>
+                  </div>
+                  <p className="text-[11.5px] leading-[16px] text-ink-2 min-w-0">
+                    ΔL* {oxv.shiftL} · Δh {oxv.shiftHue.toFixed(0)}° · drift visibility ΔE {oxv.shiftVisibility} —
+                    {oxv.shiftVisibility < 2 ? " a subtle drift" : oxv.shiftVisibility < 5 ? " visible in daylight" : " the shade changes character on you"}.
+                  </p>
+                </div>
+              </div>
+
+              {/* drivers */}
+              <div className="mt-2.5 space-y-1.5">
+                {oxv.drivers.map((d, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <span
+                      className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full"
+                      style={{ background: d.weight === "high" ? "var(--error)" : d.weight === "medium" ? "var(--gold)" : "var(--sage)" }}
+                      aria-hidden
+                    />
+                    <p className="text-[12px] leading-[16px] text-ink-2">{d.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* counter-move */}
+              {oxv.counterHex && (
+                <button
+                  onClick={() => setShadeHex(oxv.counterHex!)}
+                  className="press mt-3 w-full rounded-[12px] border border-dashed border-line-soft p-3 flex items-center gap-3 hover:bg-surface-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose/40"
+                  aria-label="Load the counter-move shade into the lab"
+                >
+                  <span className="shrink-0 w-10 h-10 rounded-[10px] border border-line-soft" style={{ background: oxv.counterHex }} />
+                  <span className="text-left min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-ink">Size instead — half a shade lighter, 7° cooler</span>
+                    <span className="block text-[11.5px] text-ink-3 mt-0.5">{oxv.counterNote}</span>
+                  </span>
+                  <RefreshIcon width={16} height={16} className="text-ink-3 shrink-0" />
+                </button>
+              )}
+
+              <p className="text-[11.5px] leading-[16px] text-ink-3 mt-2.5">{oxv.chemistry}</p>
+
+              {verdict?.ashy && verdict.ashyNote && (
+                <p className="text-[12.5px] leading-[18px] text-ink-2 mt-2 rounded-[12px] bg-honey-soft p-2.5">{verdict.ashyNote}</p>
+              )}
+              {skinType && (
+                <p className="text-[11px] text-ink-3 mt-2">Sebum factor from your {skinType} skin profile{skinType.toLowerCase().includes("oily") || skinType.toLowerCase().includes("combination") ? " — the classic oxidizer" : ""}.</p>
+              )}
+            </Card>
+          )}
 
           <p className="text-[11.5px] leading-[16px] text-ink-3 flex gap-2">
             <FlaskIcon width={14} height={14} className="shrink-0 mt-0.5" />
-            Method: Lab-space α-blend of shade and measured skin, CIEDE2000 deltas, oxidation heuristic (skin oiliness
-            × warm pull). Estimates, not corneometer readings — see docs/RESEARCH-PAPERS.md.
+            Method: Lab-space α-blend of shade and measured skin, CIEDE2000 deltas, oxidation model (sebum × warm pull ×
+            product family — the named-mechanism heuristic). Estimates, not corneometer readings — see docs/RESEARCH-PAPERS.md.
           </p>
         </div>
       ) : (

@@ -11,15 +11,18 @@
        shade Lab. We implement the closed-form Lab α-blend with
        per-product opacity constants (calibrated, tunable).
      · Depth/hue deltas + ΔE2000: our color-science engine.
-     · Oxidation risk: skin sebum × warm shade pull (paulaschoice
-       / epilynx chemistry) — a heuristic; nobody models it.
+     · Oxidation risk (V2): skin sebum × warm shade pull × product
+       family — modeled in lib/oxidation.ts; nobody else ships it.
    Pure + deterministic → SSR/hydration safe.
    ============================================================ */
 
 import { deltaE2000, labToHcl, type Lab } from "./color-science";
+import { oxidationVerdict, type ProductKind } from "./oxidation";
 import type { SkinSignature } from "./skin-signature";
 
-export type ProductKind = "foundation" | "blush" | "lip";
+/* ProductKind + KIND_ALPHA stay the public surface of shade-match;
+   the oxidation model itself lives in lib/oxidation.ts (Mirror Test V2) */
+export type { ProductKind } from "./oxidation";
 
 /* opacity of the blend in Lab (calibrated constants — tunable) */
 const KIND_ALPHA: Record<ProductKind, number> = {
@@ -137,24 +140,9 @@ export function matchShade(
         : `Sits right on your tone (ΔE ${visibility.toFixed(1)}) — a your-lips-but-better family.`;
   }
 
-  /* ---------- oxidation (novel heuristic) ---------- */
-  const warmPull = Math.max(0, deltaHue) / 20; // 1 at +20°
-  const ox = oilyFactor * (0.35 + 0.65 * Math.min(1, warmPull));
-  const oxidation =
-    ox > 0.6
-      ? {
-          risk: "high" as const,
-          note: "Your oily skin + this warm lean is the classic oxidation recipe — sebum saturates the iron oxides and shades shift darker/orange within the hour. Sizing half a shade cooler-lighter is the standard counter.",
-        }
-      : ox > 0.35
-        ? {
-            risk: "medium" as const,
-            note: "Some oxidation likely on oilier days — set with powder, or keep this shade for matte/dry-skin formulas.",
-          }
-        : {
-            risk: "low" as const,
-            note: "Oxidation risk is low — the undertone lean and your skin balance keep this stable.",
-          };
+  /* ---------- oxidation (Mirror Test V2 — lib/oxidation.ts) ---------- */
+  const oxv = oxidationVerdict(skin, shade, kind, predicted, oilyFactor);
+  const oxidation = { risk: oxv.risk, note: oxv.note } as { risk: "low" | "medium" | "high"; note: string };
 
   /* ---------- ashy risk ---------- */
   const ashy = deltaHue < -6 && shadeSteps < -0.5;

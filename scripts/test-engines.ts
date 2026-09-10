@@ -455,5 +455,198 @@ console.log("\n── label-scan engine ──");
   check("scanLabel is deterministic", a1 === a2);
 }
 
+/* ---------- 6. Oxidation engine (Mirror Test V2) ---------- */
+
+{
+  console.log("\n── oxidation engine ──");
+  const { oxidationVerdict, formulaOxidation } = await import("../src/lib/oxidation");
+  const { predictOnSkin, matchShade } = await import("../src/lib/shade-match");
+  const { hexToLab, labToHex } = await import("../src/lib/color-science");
+
+  /* plausible measured skin: L 64, warm-neutral */
+  const skin = { L: 64, a: 13, b: 17 };
+  /* warm-leaning foundation shade (orange lean: high b vs a) */
+  const warmShade = hexToLab("#E8C4A0");
+  /* cool-leaning shade */
+  const coolShade = hexToLab("#E8C8D0");
+  const pred = predictOnSkin(skin, warmShade, "foundation");
+
+  const high = oxidationVerdict(skin, warmShade, "foundation", pred, 0.85);
+  const low = oxidationVerdict(skin, coolShade, "lip", predictOnSkin(skin, coolShade, "lip"), 0.25);
+
+  check("oily+warm+foundation scores high", high.risk === "high", `score=${high.score}`);
+  check("dry+cool+lip scores low", low.risk === "low", `score=${low.score}`);
+  check("score bounds 0-100", high.score >= 0 && high.score <= 100 && low.score >= 0 && low.score <= 100);
+
+  /* the one-hour simulation: darker + warmer */
+  check("post-oxidation is darker (L drops)", high.postOxidation.L < pred.L, `dL=${(high.postOxidation.L - pred.L).toFixed(2)}`);
+  check("post-oxidation is warmer (b rises)", high.postOxidation.b > pred.b, `db=${(high.postOxidation.b - pred.b).toFixed(2)}`);
+  check("low risk shifts less than high risk", Math.abs(low.shiftL) < Math.abs(high.shiftL));
+  check("shiftL is negative, shiftHue positive on high", high.shiftL < 0 && high.shiftHue > 0);
+  check("drift visibility is a positive ΔE", high.shiftVisibility > 0);
+
+  /* counter-move only when it matters, and it's lighter + cooler */
+  check("high risk gets a counter-shade", high.counterHex !== null);
+  check("low risk gets no counter-shade", low.counterHex === null);
+  if (high.counterHex) {
+    const counter = hexToLab(high.counterHex);
+    check("counter-shade is lighter than the original", counter.L > warmShade.L, `dL=${(counter.L - warmShade.L).toFixed(2)}`);
+    check("counter-shade is cooler (lower hue)", counter.b / (Math.abs(counter.a) + 1e-9) < warmShade.b / (Math.abs(warmShade.a) + 1e-9) || hexToLab(high.counterHex).b < warmShade.b);
+    check("counter-shade is a valid hex", /^#[0-9A-F]{6}$/i.test(high.counterHex));
+  }
+
+  /* drivers + copy */
+  check("drivers explain the chemistry (3 rows)", high.drivers.length === 3);
+  check("drivers mention sebum for oily skin", high.drivers[0].label.toLowerCase().includes("skin"));
+  check("chemistry names the mechanism", /sebum.*iron|iron.*sebum/i.test(high.chemistry));
+  check("headline copy present", high.headline.length > 3 && low.headline.length > 3);
+  check("note copy present", high.note.length > 40);
+
+  /* kind propensity ordering */
+  const fnd = oxidationVerdict(skin, warmShade, "foundation", predictOnSkin(skin, warmShade, "foundation"), 0.7);
+  const lip = oxidationVerdict(skin, warmShade, "lip", predictOnSkin(skin, warmShade, "lip"), 0.7);
+  check("foundation outranks lip at same inputs", fnd.score > lip.score, `fnd=${fnd.score} lip=${lip.score}`);
+
+  /* matchShade still exposes the compat oxidation field via the shared engine */
+  const mv = matchShade(skin, warmShade, "foundation", 0.85);
+  check("matchShade.oxidation matches the engine risk", mv.oxidation.risk === high.risk);
+
+  /* determinism */
+  const o1 = JSON.stringify(oxidationVerdict(skin, warmShade, "foundation", pred, 0.85));
+  const o2 = JSON.stringify(oxidationVerdict(skin, warmShade, "foundation", pred, 0.85));
+  check("oxidationVerdict is deterministic", o1 === o2);
+
+  /* formula read from INCI tokens */
+  const iron = formulaOxidation(["aqua", "ci 77491", "dimethicone", "glycerin"]);
+  check("iron oxides detected", iron !== null && iron.matched.includes("ci 77491"));
+  check("iron oxides → propensity ≥ 0.55", iron !== null && iron.propensity >= 0.55);
+  const vitc = formulaOxidation(["aqua", "ascorbic acid", "glycerin"]);
+  check("vitamin C detected", vitc !== null && vitc.matched.includes("ascorbic acid"));
+  check("iron + vitc stacks propensity", (formulaOxidation(["ci 77492", "ascorbic acid"])?.propensity ?? 0) > (iron?.propensity ?? 0));
+  check("benzoyl peroxide detected", formulaOxidation(["aqua", "benzoyl peroxide"]) !== null);
+  check("clean list returns null", formulaOxidation(["aqua", "glycerin", "xanthan gum"]) === null);
+  check("formula notes are human sentences", (iron?.notes[0].length ?? 0) > 40);
+  /* CI codes survive via raw text even though the tokenizer strips digits */
+  const splitIron = splitInci("Aqua, Niacinamide, CI 77491, Dimethicone");
+  check("tokenizer strips CI digits (known behavior)", !splitIron.includes("ci 77491"));
+  const viaRaw = formulaOxidation(splitIron, "Aqua, Niacinamide, CI 77491, Dimethicone");
+  check("CI 77491 caught from raw text", viaRaw !== null && viaRaw.propensity >= 0.55);
+  check("raw-text iron note names the pigment family", /iron/i.test(viaRaw?.notes[0] ?? ""));
+
+  /* the compat surface: labToHex round-trips through the engine (sanity) */
+  check("labToHex works on predicted Lab", /^#[0-9A-F]{6}$/i.test(labToHex(pred)));
+}
+
+/* ---------- 7. Shelf engine (Mirror Test V4) ---------- */
+
+{
+  console.log("\n── shelf engine ──");
+  const { paoStatus, findDuplicates, costPerUse, shelfSummary, buildShelfItem, SHELF_MAX_ITEMS } =
+    await import("../src/lib/shelf");
+  const { paoById, paoCategories } = await import("../src/data/pao");
+
+  const TODAY = "2026-09-10";
+
+  const mk = (over: Partial<ReturnType<typeof buildShelfItem> & object>): ReturnType<typeof buildShelfItem> => ({
+    id: "x", name: "Product", category: "serum", addedOn: "2026-06-01",
+    openedOn: null, price: null, usesPerWeek: null, swatchHex: null, activeId: null, scanned: false,
+    ...over,
+  });
+
+  /* PAO math */
+  const sealed = mk({ name: "Sealed serum" });
+  check("sealed item: unopened, no countdown", paoStatus(sealed, TODAY).state === "unopened" && paoStatus(sealed, TODAY).daysLeft === null);
+  check("sealed label mentions the clock starting", /sealed/i.test(paoStatus(sealed, TODAY).label));
+
+  const opened7m = mk({ name: "Old serum", openedOn: "2025-08-01" }); /* serum = 12M → expires 2026-08-01 */
+  const st7 = paoStatus(opened7m, TODAY);
+  check("opened 13 months of a 12M PAO is expired", st7.state === "expired", JSON.stringify(st7));
+  check("expired daysLeft is negative", (st7.daysLeft ?? 0) < 0);
+
+  const opened0m = mk({ name: "New serum", openedOn: "2026-09-01" }); /* 12M → 2027-09-01 */
+  const st0 = paoStatus(opened0m, TODAY);
+  check("freshly opened is fresh", st0.state === "fresh");
+  check("fresh label reads months", /month/i.test(st0.label));
+  check("fresh pct is high", (st0.pct ?? 0) > 95);
+
+  const soon = mk({ name: "Expiring mascara", category: "mascara", openedOn: "2026-03-20" }); /* 6M → 2026-09-20 */
+  const stS = paoStatus(soon, TODAY);
+  check("mascara 10 days before expiry = expiring-soon", stS.state === "expiring-soon", JSON.stringify(stS));
+  check("expiring-soon window is ≤ 30 days", (stS.daysLeft ?? 0) <= 30 && (stS.daysLeft ?? 0) >= 0);
+  check("expiring label reads weeks", /week/i.test(stS.label));
+
+  /* calendar-month edge: Jan 31 + 1M = Feb 28 */
+  const jan = mk({ category: "mascara", openedOn: "2026-01-31" }); /* 6M from Jan 31 */
+  const stJan = paoStatus(jan, "2026-02-01");
+  check("Jan 31 + 1M lands on Feb 28/29 (no crash)", stJan.expiresOn === null || /^\d{4}-\d{2}-\d{2}$/.test(stJan.expiresOn));
+  check("junk date degrades gracefully", paoStatus(mk({ openedOn: "not-a-date" }), TODAY).daysLeft === null);
+
+  /* category data integrity */
+  check("PAO categories: 15 shipped + fallback", paoCategories.length >= 14);
+  check("every category has plausible PAO (3-36 months)", paoCategories.every((c) => c.paoMonths >= 3 && c.paoMonths <= 36));
+  check("unknown category falls back to 12M generic", paoById("nope").paoMonths === 12 && paoById("nope").id === "other");
+  check("paoStatus uses fallback for junk category", paoStatus(mk({ category: "junk-cat" }), TODAY).months === 12);
+
+  /* duplicates: shade twins (ΔE2000 < 5, same category) */
+  const berryA = mk({ id: "a", name: "Berry 01", category: "lipstick", swatchHex: "#B05479" });
+  const berryB = mk({ id: "b", name: "Berry 02", category: "lipstick", swatchHex: "#B3567B" }); /* near-identical */
+  const berryC = mk({ id: "c", name: "Berry 03", category: "lipstick", swatchHex: "#8E2A52" }); /* clearly different */
+  const berryD = mk({ id: "d", name: "Berry 04", category: "blush-powder", swatchHex: "#B05479" }); /* same color, other category */
+  const dups = findDuplicates([berryA, berryB, berryC, berryD]);
+  check("near-identical berry detected (ΔE < 5)", dups.some((d) => d.aId === "a" && d.bId === "b" && d.basis === "shade"));
+  check("visually different shade NOT a duplicate", !dups.some((d) => (d.aId === "a" && d.bId === "c") || (d.aId === "b" && d.bId === "c")));
+  check("same swatch in another category NOT a duplicate", !dups.some((d) => (d.aId === "a" && d.bId === "d")));
+  check("duplicate message is a human sentence", (dups.find((d) => d.basis === "shade")?.message.length ?? 0) > 40);
+
+  /* duplicates: active twins (same activeId + category, no swatches) */
+  const retA = mk({ id: "r1", name: "Retinol A", category: "serum", activeId: "retinol" });
+  const retB = mk({ id: "r2", name: "Retinol B", category: "serum", activeId: "retinol" });
+  const retC = mk({ id: "r3", name: "Retinol C", category: "moisturizer", activeId: "retinol" });
+  const retD = mk({ id: "r4", name: "Niacinamide", category: "serum", activeId: "niacinamide" });
+  const actDups = findDuplicates([retA, retB, retC, retD]);
+  check("same active + same category = active twin", actDups.some((d) => d.aId === "r1" && d.bId === "r2" && d.basis === "active"));
+  check("same active, different category NOT a twin", !actDups.some((d) => (d.aId === "r1" && d.bId === "r3")));
+  check("different active NOT a twin", !actDups.some((d) => (d.aId === "r1" && d.bId === "r4")));
+
+  /* cost per use */
+  const pricey = mk({ name: "Serum", category: "serum", price: 48, usesPerWeek: 7 }); /* 12M × 4.33 × 7 ≈ 364 uses */
+  const cpu = costPerUse(pricey);
+  check("cost-per-use computed", cpu !== null && cpu.perUse > 0 && cpu.perUse < 1);
+  check("cost-per-use null without price", costPerUse(mk({ usesPerWeek: 7 })) === null);
+  check("cost-per-use null without uses", costPerUse(mk({ price: 48 })) === null);
+
+  /* summary */
+  const shelf = [opened7m, soon, sealed, berryA, berryB];
+  const sum = shelfSummary(shelf, TODAY);
+  check("summary counts total", sum.total === 5);
+  check("summary counts expired", sum.expired === 1);
+  check("summary counts expiring-soon", sum.expiringSoon === 1);
+  check("summary counts duplicates", sum.duplicates === 1);
+  check("summary counts open", sum.open === 2);
+  check("headline mentions the problems", sum.headline.includes("past PAO") && sum.headline.includes("expiring soon"));
+  check("share text exists", sum.shareText.length > 20);
+  check("empty shelf summary is graceful", shelfSummary([], TODAY).total === 0 && shelfSummary([], TODAY).headline.includes("empty"));
+
+  /* buildShelfItem sanitization */
+  const built = buildShelfItem(
+    { name: "  Great Serum  ", category: "serum", price: 24.999, usesPerWeek: 99, swatchHex: "#a84a62", openedOn: "2026-09-01", activeId: "retinol", scanned: true },
+    "id-1", "2026-09-10",
+  );
+  check("buildShelfItem trims + caps name", built.name === "Great Serum");
+  check("buildShelfItem rounds price", built.price === 25);
+  check("buildShelfItem caps uses/week at 70", built.usesPerWeek === 70);
+  check("buildShelfItem uppercases swatch", built.swatchHex === "#A84A62");
+  check("buildShelfItem keeps valid openedOn", built.openedOn === "2026-09-01");
+  const junk = buildShelfItem({ name: "", category: "junk", price: -5, usesPerWeek: -1, swatchHex: "red" }, "id-2", "2026-09-10");
+  check("junk inputs fall back to safe values", junk.name === "New product" && junk.price === null && junk.usesPerWeek === null && junk.swatchHex === null);
+  check("empty name gets a fallback, junk category → generic", junk.category === "other");
+  check("shelf cap exported", SHELF_MAX_ITEMS === 60);
+
+  /* determinism */
+  const s1 = JSON.stringify(shelfSummary(shelf, TODAY));
+  const s2 = JSON.stringify(shelfSummary(shelf, TODAY));
+  check("shelfSummary is deterministic", s1 === s2);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);

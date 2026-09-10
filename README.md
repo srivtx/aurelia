@@ -18,9 +18,9 @@ Aurelia is an installable, offline-capable Progressive Web App built with Next.j
   - **Outfit Lab** — scores any 2–4 colors via CIELCh hue geometry, lightness spread (WCAG-style contrast), chroma coherence, warmth coherence and personal-season fit (ΔE2000), then suggests 60-30-10 roles — and with 3+ colors, the **Diagnosis** card: leave-one-out per-item contribution (who carries the outfit, who weakens it) plus a one-tap best-swap with a predicted score (node-wise diagnosis in the spirit of Balim 2023, on our deterministic engine).
   - **Photo → Palette** — k-means clustering in CIELAB space over a downscaled canvas — dominant-color extraction that never leaves the device.
   - **Skin Signature** — dermatology-grade colorimetry from one selfie: white-point (von-Kries) calibration against a reference patch, CIELAB averaging, **ITA°** depth classification, hue-angle undertone and chroma — the measured replacement for the folklore undertone quiz. Feeds the Shade Lab, the passport and season evidence.
-  - **Shade Lab** — foundation/blush/lip verdicts from a Lab-space blend model (arXiv 2024 lineage): predicted on-skin color, ΔE2000 visibility, shade-step depth deltas, undertone congruence, oxidation risk and ashy-cast warnings — “how it will look on YOU” without AR.
+  - **Shade Lab** — foundation/blush/lip verdicts from a Lab-space blend model (arXiv 2024 lineage): predicted on-skin color, ΔE2000 visibility, shade-step depth deltas, undertone congruence and ashy-cast warnings — “how it will look on YOU” without AR — plus the **oxidation verdict (Mirror Test V2)**: her measured sebum profile × the shade's warm lean × product family → a 0–100 risk score, a **one-hour simulation** (fresh vs darker/warmer drift swatches), ranked drivers with the sebum-×-iron-oxide chemistry, and a one-tap counter-move (“size instead: half a shade lighter, 7° cooler”) that loads a swatch into the lab. Nobody on the market models this; it's folklore with a mechanism.
 - **Makeup** — five occasion looks with step-by-step instructions, the 12-step application order, face/eye/lip 101 guides, common mistakes, tool care — and the **Glow Delta**: before/after selfies, independently white-point corrected, measured per region with **ΔE2000** (Kim 2023 lineage) — luminance lift, redness shift, evenness change, shareable outcome card. It measures *change*, never “beauty”.
-- **Skincare** — a 10-question skin-type quiz, a daily AM/PM routine checklist, an ingredient dictionary, mixing rules, the **Ingredient Lab** (an evidence-based conflict/synergy matrix with an AM/PM routine sequencer, pH-ordered, thin→thick, SPF last), the **Label Scanner** (photograph any INCI list — on-device OCR via a lazy-loaded tesseract.js worker, upscaled + contrast-stretched; the token matcher is label-noise tolerant with fuzzy matching, and every verdict is crossed against *your* saved routine — conflicts classified “with your routine” vs “inside this product”, plus fragrance/alcohol/essential-oil flags; paste-the-list fallback always available, photo never uploaded), and the **Skin Journal**, the closed beauty loop’s retention engine: a weekly calibrated selfie → per-zone redness (a\*), evenness (ΔE dispersion), texture (edge energy) and **gloss** (specular fraction — the selfie hydration proxy of Soh 2025, honestly labeled “estimate, not a corneometer”) → trend sparklines, regression slopes and milestones wired to the actives you tag (“cheek redness ↓ 28% while on niacinamide”). Trends, never diagnosis.
+- **Skincare** — a 10-question skin-type quiz, a daily AM/PM routine checklist, an ingredient dictionary, mixing rules, the **Ingredient Lab** (an evidence-based conflict/synergy matrix with an AM/PM routine sequencer, pH-ordered, thin→thick, SPF last), the **Label Scanner** (photograph any INCI list — on-device OCR via a lazy-loaded tesseract.js worker, upscaled + contrast-stretched; the token matcher is label-noise tolerant with fuzzy matching, and every verdict is crossed against *your* saved routine — conflicts classified “with your routine” vs “inside this product”, plus fragrance/alcohol/essential-oil flags, an **oxidation formula read** on iron-oxide/vitamin-C/peroxide chemistries, and one-tap **save-to-Shelf**; paste-the-list fallback always available, photo never uploaded), the **Skin Journal**, the closed beauty loop’s retention engine: a weekly calibrated selfie → per-zone redness (a\*), evenness (ΔE dispersion), texture (edge energy) and **gloss** (specular fraction — the selfie hydration proxy of Soh 2025, honestly labeled “estimate, not a corneometer”) → trend sparklines, regression slopes and milestones wired to the actives you tag (“cheek redness ↓ 28% while on niacinamide”). Trends, never diagnosis. And **The Shelf (Mirror Test V4)**: every scanned or added product joins an offline inventory with a **PAO countdown** per category (the >90% PAO-overrun problem made visible — EU 1223/2009 conventions, honest “when in doubt, toss it” line), **near-duplicate detection** (swatch ΔE2000 < 5 within the same category, plus same-active twins → “you already own a near-identical berry”), and cost-per-use — exported with the Beauty Passport.
 - **Hair** — hairstyles matched to eight outfit categories, ten master styles, face-shape guides, the **Face Meter** — an anthropometric ratio classifier (length/cheekbone, forehead and jaw taper) with a live-morphing SVG face preview — and the **Texture Lab**: photograph a section of hair, tap two strand patches, and a pure-CV fiber-geometry engine (orientation coherence, ridge frequency, edge density) classifies your curl pattern on the 10-class scale (1, 2A–C, 3A–C, 4A–C; Callender 2026 lineage), then unlocks texture-specific care — wash cadence, moisture layering, styling physics, ingredients, night routine — and the master styles that suit your texture. Geometry measures *texture*, never “good hair”.
 - **Ask Aurelia** — an AI stylist chat with **token-by-token streaming**, markdown-rendered replies, and knowledge-grounded answers (RAG over the app's own content). The model behind her is a **server-side decision**: operators plug in a free key from Groq, Google Gemini, OpenRouter, Cerebras, Mistral, or a local LLM (Ollama/LM Studio) via env vars — users never see or choose a provider, and the built-in cloud model is the always-on fallback.
 - **Agent-ready (WebMCP)** — the color-science, season, routine, conflict and search engines are registered as **read-only MCP tools** (`document.modelContext`), so your browser/desktop AI agent (ChatGPT site tools, Chrome/Edge trials) can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge` and `compare_colors` directly against the live page.
@@ -30,6 +30,8 @@ Aurelia is an installable, offline-capable Progressive Web App built with Next.j
 App-level features: global search across all content including the tools, a three-step onboarding flow that personalizes the home screen, saved favorites, shareable tip and palette cards, glow streak with home-screen badge, storage persistence, dark mode, and deep-linkable hash routes.
 
 **The closed beauty loop** — MEASURE (selfie colorimetry) → ADVISE (season, routine, outfit, stylist engines) → RE-MEASURE (glow delta, weekly journal) → ADAPT (milestones wired to your actives). Every measurement is on-device, white-reference calibrated, and paper-grounded ([docs/RESEARCH-PAPERS.md](docs/RESEARCH-PAPERS.md)).
+
+**The Mirror Test** — the product-decision engine for “will this product work for ME?”: all four verdicts are live — **V1 Skin Signature** (calibrated colorimetry), **V2 Oxidation risk** (sebum × warm lean × formula, with a one-hour drift simulation), **V3 Label Scanner** (INCI OCR × her routine), **V4 Shelf** (PAO countdown + ΔE2000 duplicate radar). Scan a product, save it to the shelf, and the countdown + duplicate checks run offline against her own measured data ([docs/RESEARCH-UNIQUE-PROBLEM.md](docs/RESEARCH-UNIQUE-PROBLEM.md)).
 
 ## Tech Stack
 
@@ -78,7 +80,8 @@ node scripts/e2e-chat-fixes.mjs     # chat markdown, contrast, dark-mode tokens,
 node scripts/e2e-closed-loop.mjs    # Glow Delta + Skin Journal flows with synthetic calibrated selfies
 node scripts/e2e-texture-diagnosis.mjs # Texture Lab (synthetic hair), Outfit diagnosis + swap, gloss trend
 node scripts/e2e-scanner.mjs         # Label Scanner: paste flow, verdicts, live routine re-derive, persistence + real OCR smoke
-bun scripts/test-engines.ts        # pure-engine math: glow delta, journal/gloss, curl classifier, outfit diagnosis, label scan
+node scripts/e2e-shelf-oxidation.mjs # Mirror Test V2+V4: Shade Lab oxidation verdict, formula read, save-to-shelf, PAO + duplicates
+bun scripts/test-engines.ts        # pure-engine math: glow delta, journal/gloss, curl classifier, outfit diagnosis, label scan, oxidation, shelf
 node scripts/check-providers.mjs    # operator: verify AI provider keys + server-side resolution
 ```
 
@@ -117,7 +120,7 @@ Any Node.js host or container works. The app is fully static at the root route a
 Everything a contributor needs is preserved in [`docs/`](docs/):
 
 - **[docs/CONTEXT.md](docs/CONTEXT.md)** — start here: full codebase map, design-token rules (including the alias pitfall), hydration guardrails, engine reference, how to add content/features.
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — free-model setup (Groq/Gemini/OpenRouter/Cerebras/Mistral/local), Vercel + Docker + self-host guides, troubleshooting.
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — the complete deployment guide: AI deployment-agent brief (repo facts, env contract, verification commands, red lines), free-model setup (Groq/Gemini/OpenRouter/Cerebras/Mistral/local), GitHub → Vercel flow, Docker/VPS self-hosting, post-deploy checklist, rollback, troubleshooting.
 - **[docs/RESEARCH-DEEPTECH.md](docs/RESEARCH-DEEPTECH.md)** — WebMCP spec deep-dive, free-LLM provider matrix, modern PWA APIs, ranked deep-tech roadmap.
 - **[docs/RESEARCH-NEXT-TECH.md](docs/RESEARCH-NEXT-TECH.md)** — the next layer (2026-09): live AR mirror (MediaPipe FaceLandmarker), offline stylist via Chrome built-in AI, OCR ingredient scanner, WebGPU/OKLCh color lab, bandit + spaced-repetition personalization, on-device VLM.
 - **[docs/RESEARCH-PWA-LAUNCH.md](docs/RESEARCH-PWA-LAUNCH.md)** — PWA launch checklist and benchmarks.
@@ -138,14 +141,18 @@ src/
                               # provider invisible to users), markdown renderer,
                               # platform bridge (WebMCP/badge/share-target), season analysis,
                               # outfit lab, photo analyzer, ingredient lab, face meter,
-                              # beauty passport
+                              # skin signature capture, shade lab, glow delta, skin journal,
+                              # scanner lab, shelf, beauty passport
   components/aurelia/tabs/    # home, colors, makeup, skin, hair
   data/                       # content knowledge base (colors, makeup, skincare, hair,
-                              # tips, 12 seasons, active ingredients)
+                              # tips, 12 seasons, active ingredients, curl patterns,
+                              # INCI aliases, PAO categories)
   lib/                        # zustand store, search index, share utilities, RAG grounding,
                               # AI provider registry, WebMCP tools, passport, share inbox,
                               # color-science engine, outfit engine, palette extraction
-                              # (k-means), routine sequencer, face-shape classifier
+                              # (k-means), routine sequencer, face-shape classifier,
+                              # skin signature, shade match, oxidation, glow delta,
+                              # skin journal, curl classifier, label scan + OCR, shelf
 public/                       # manifest (share_target, file_handlers), service worker,
                               # icons, splash screens, og image
 docs/                         # research + context + deployment guides

@@ -1,6 +1,6 @@
 /* Aurelia service worker — app shell + offline-first content
    + Web Share Target inbox (Android share sheet → on-device analysis) */
-const VERSION = "aurelia-v4";
+const VERSION = "aurelia-v5";
 const SHELL_CACHE = `${VERSION}-shell`;
 const SHARE_INBOX = "aurelia-share-inbox";
 const SHARE_INBOX_URL = "/share-inbox/last";
