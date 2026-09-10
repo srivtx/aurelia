@@ -1,5 +1,5 @@
 {
-  "name": "nextjs_tailwind_shadcn_ts",
+  "name": "aurelia",
   "version": "0.2.1",
   "private": true,
   "scripts": {
@@ -91,5 +91,16 @@
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5"
-  }
+  },
+  "description": "Beauty advice with a mechanism, computed on-device. Mobile-first PWA: color science, outfit scoring, shade and oxidation verdicts, label scanner, AI stylist.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/srivtx/aurelia.git"
+  },
+  "homepage": "https://github.com/srivtx/aurelia#readme",
+  "bugs": {
+    "url": "https://github.com/srivtx/aurelia/issues"
+  },
+  "author": "srivtx"
 }
