@@ -4,7 +4,7 @@
 
 # Aurelia
 
-Beauty advice with a mechanism, not a moodboard. Seasonal color analysis, outfit scoring, shade and oxidation verdicts, label scanning — all computed on-device by real color-science engines. No accounts, no uploads, no tracking.
+**Beauty advice with a mechanism.**
 
 [![Stars](https://img.shields.io/github/stars/srivtx/aurelia?style=flat&logo=github&label=Stars&color=181717)](https://github.com/srivtx/aurelia/stargazers)
 [![License](https://img.shields.io/badge/License-All_Rights_Reserved-8B5CF6?style=flat)](./README.md#license)
@@ -13,109 +13,94 @@ Beauty advice with a mechanism, not a moodboard. Seasonal color analysis, outfit
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
-[Features](#features) · [The Mirror Test](#the-mirror-test) · [Deploy](#deploy) · [Full Docs](docs/README-EXTENDED.md)
+[Documentation](docs/README-EXTENDED.md) &nbsp;&nbsp;•&nbsp;&nbsp; [Deploy](#deploy) &nbsp;&nbsp;•&nbsp;&nbsp; [Issues](https://github.com/srivtx/aurelia/issues)
 
 </div>
 
 ---
 
-## Why Aurelia
+Aurelia is a browser-only style and beauty app for the Mirror Test question — *will this product work on me?* — answered by measurement instead of folklore. Its advice is computed by deterministic engines on real color science (CIELAB, CIEDE2000); its photos, profile, and product shelf never leave the device, so there is nothing to leak and nothing to sell.
 
-Every beauty app gives tips. Aurelia computes answers from measurements taken on your own device — calibrated selfie colorimetry (CIELAB, ΔE2000), paper-grounded engines with named mechanisms, and a privacy model with nothing to leak: your photos, your profile, and your shelf never leave the browser.
+It ships as a mobile installable — four content modules, five tabs, an offline service worker, and a set of engines most apps fake:
 
-The flagship is the **Mirror Test** — the product-decision engine for "will this product work for me?":
+| | Engine | Mechanism |
+| --- | --- | --- |
+| ▦ | **Outfit Lab** | CIELCh hue geometry, WCAG contrast, your season fit (ΔE2000) → score, 60-30-10 roles, leave-one-out diagnosis |
+| ◐ | **12-Season Analysis** | warmth × depth × chroma × contrast vector → season archetype, personal palette, metals |
+| ⬡ | **Skin Signature** | white-point (von-Kries) calibrated selfie → ITA° depth, hue-angle undertone |
+| ⬢ | **Shade Lab** | Lab-space blend model → on-skin prediction, ashy warnings, oxidation risk + one-hour drift simulation |
+| ⌕ | **Label Scanner** | on-device INCI OCR crossed against your routine → conflicts, flags, formula reads |
+| ⬛ | **The Shelf** | PAO countdowns, ΔE2000 near-duplicate radar, cost-per-use — offline inventory |
+| ✚ | **Glow Delta & Journal** | before/after selfies measured per region; weekly trends wired to the actives you tag |
+| ↗ | **Hair** | Face Meter (anthropometric ratios) + Texture Lab (fiber geometry → 10-class curl scale) |
+| ✉ | **Ask Aurelia** | streaming AI stylist, RAG-grounded on the app's own content; server-side provider, user sees none |
+| ⚙ | **WebMCP bridge** | engines expose read-only tools agents can call against the live page |
 
-| Verdict | What it does |
-| --- | --- |
-| **V1 · Skin Signature** | Calibrated selfie colorimetry — depth, undertone, chroma, season evidence |
-| **V2 · Oxidation Risk** | Sebum × warm lean × formula chemistry → 0–100 risk + one-hour drift simulation |
-| **V3 · Label Scanner** | INCI OCR crossed against your routine — conflicts, flags, oxidation reads |
-| **V4 · The Shelf** | PAO countdowns + ΔE2000 duplicate radar, running offline on your measured data |
+Every measurement is white-reference calibrated and paper-grounded — the full lineage lives in [docs/RESEARCH-PAPERS.md](docs/RESEARCH-PAPERS.md).
 
-Scan a product, save it to the shelf, and the countdown and duplicate checks run offline against your own measured data.
+## Install
 
-## Features
+Prerequisites: Node.js 20+ (or Bun 1.1+). No database, no keys, no accounts.
 
-- **Colors & Outfit Lab** — 19-color matching engine, 15 curated palettes, undertone finder; the Outfit Lab scores any color mix via CIELCh hue geometry, WCAG-style contrast, and your personal season fit (ΔE2000), with 60-30-10 roles and a leave-one-out diagnosis showing which piece carries or weakens the outfit.
-- **12-Season Analysis** — a 7-question diagnostic → personal palette, metals, makeup direction, and wardrobe ratings against 12 season archetypes.
-- **Skin Signature & Shade Lab** — white-point calibrated selfie colorimetry (ITA° depth, hue-angle undertone) feeding foundation/blush/lip verdicts: predicted on-skin color, ΔE2000 visibility, ashy-cast warnings, and the oxidation verdict with a one-hour drift simulation and a one-tap counter-move.
-- **Makeup** — 5 occasion looks, the 12-step application order, and the **Glow Delta**: before/after selfies measured per region — luminance lift, redness shift, evenness change. It measures change, never "beauty".
-- **Skincare & Label Scanner** — evidence-based conflict/synergy matrix with an AM/PM routine sequencer (pH-ordered, thin→thick, SPF last); photograph any INCI list and the verdict crosses against your saved routine, with a paste-the-list fallback. The photo is never uploaded.
-- **Skin Journal & The Shelf** — weekly calibrated selfies → trend sparklines wired to the actives you tag ("cheek redness ↓ 28% while on niacinamide"); offline product inventory with PAO countdowns, near-duplicate radar (ΔE2000 < 5), and cost-per-use.
-- **Hair** — the Face Meter (anthropometric ratios, live-morphing SVG preview) and the Texture Lab: a pure-CV fiber-geometry engine classifying curl on the 10-class scale, unlocking texture-specific care.
-- **Ask Aurelia** — an AI stylist chat with token-by-token streaming, grounded by RAG over the app's own content. The provider is a server-side operator decision (Groq, Gemini, OpenRouter, Cerebras, Mistral, or a local LLM) — users never see one, and the built-in model is the always-on fallback.
-- **Agent-ready (WebMCP)** — the engines register as read-only MCP tools, so a browser AI agent can call `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge`, `compare_colors` against the live page.
-- **Beauty Passport & Share-to-Analyze** — export your profile as portable JSON you own; share any image into the app (Android share target, desktop file handlers) and the on-device analyzer runs on it. Nothing is uploaded, ever.
-
-**The closed beauty loop** — MEASURE (selfie colorimetry) → ADVISE (season, routine, outfit, stylist engines) → RE-MEASURE (glow delta, weekly journal) → ADAPT (milestones wired to your actives). See [docs/RESEARCH-PAPERS.md](docs/RESEARCH-PAPERS.md) for the paper lineage behind every engine.
-
-## Tech Stack
-
-- [Next.js](https://nextjs.org) 16 (App Router, Turbopack)
-- TypeScript (strict), Zustand (persisted, hydration-safe)
-- Tailwind CSS 4 (custom token system), Framer Motion
-- Pure-TS color engine: sRGB ↔ CIE XYZ ↔ CIELAB/CIELCh, CIEDE2000, WCAG contrast
-- Tesseract.js OCR (lazy worker, on-device), service worker app-shell caching
-- Custom SVG illustrations — no external image assets
-
-## Getting Started
-
-Prerequisites: Node.js 20+ (or Bun 1.1+). No database, no API keys, no config.
-
-```bash
+```sh
 git clone https://github.com/srivtx/aurelia.git
 cd aurelia
-
 npm install
 npm run dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — fully functional out of the box, including the AI stylist.
+That's it — the AI stylist works out of the box on the built-in provider. Production:
 
-| Script | Purpose |
-| --- | --- |
-| `npm run dev` | Dev server on port 3000 |
-| `npm run build` | Production build (standalone output) |
-| `npm run start` | Serve the production build |
-| `npm run lint` | ESLint |
-
-Verification suites live in `scripts/` — hydration check, a 191-check engine suite, and seven Playwright e2e batteries (usage in [docs/README-EXTENDED.md](docs/README-EXTENDED.md#getting-started-verified)).
+```sh
+npm run build
+npm run start
+```
 
 ## Deploy
 
-<div align="center">
-
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsrivtx%2Faurelia&project-name=aurelia&repository-name=aurelia)
 
-</div>
+Import at [vercel.com/new](https://vercel.com/new), accept the auto-detected defaults, deploy with zero environment variables. Every push to `main` ships automatically.
 
-Import the repo at [vercel.com/new](https://vercel.com/new), accept the auto-detected defaults, and deploy with zero environment variables — the built-in stylist works immediately. Every push to `main` ships automatically.
+Optional — a free LLM key (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, …) set server-side; providers auto-detect in priority order and silently fall back to the built-in model, so the chat never goes down. Keys are never exposed to the client.
 
-Optional: add a free provider key (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `CEREBRAS_API_KEY`, `MISTRAL_API_KEY`) — server-side only, resolved in priority order with silent fallback so the chat never goes down. Keys are never exposed to the client.
+GitHub Pages is not supported (the app has API routes). Docker, VPS, rollback, and the full post-deploy checklist are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-GitHub Pages is not supported (the app has API routes). Docker/VPS self-hosting, rollback, troubleshooting, and the full post-deploy checklist live in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+## Features
 
-## Documentation
+- **Colors** — 19-color matching engine, 15 curated palettes, undertone finder, color-theory basics.
+- **12-Season Analysis** — a 7-question diagnostic mapped to a seasonal archetype with confidence; palette, metals, makeup direction, wardrobe ratings.
+- **Outfit Lab** — hue geometry, lightness spread, chroma and warmth coherence, season fit; with 3+ colors, a Diagnosis card showing which piece carries the outfit and a one-tap best swap with a predicted score.
+- **Photo → Palette** — k-means in CIELAB, fully on-device.
+- **Skin Signature & Shade Lab** — measured depth, undertone, and chroma feeding foundation/blush/lip verdicts — predicted on-skin color, ΔE2000 visibility, ashy-cast warnings, and the oxidation verdict with a one-hour drift simulation and a counter-move.
+- **Glow Delta & Skin Journal** — before/after selfies measured per region; weekly trends with regression slopes — "cheek redness ↓ 28% while on niacinamide". Trends, never diagnosis.
+- **Ingredient Lab & Label Scanner** — pH-ordered AM/PM routine sequencer with a conflict/synergy matrix; photograph any INCI list and every verdict crosses against your saved routine, with a paste-the-list fallback.
+- **The Shelf** — offline product inventory with PAO countdowns (EU 1223/2009 conventions), near-duplicate shade radar (ΔE2000 < 5), cost-per-use.
+- **Hair** — Face Meter (live-morphing SVG preview) and Texture Lab: strand photography → curl pattern on the 10-class scale → texture-specific care. Geometry measures texture, never "good hair".
+- **Ask Aurelia** — token-by-token streaming, markdown rendering, RAG-grounded answers.
+- **Agent-ready (WebMCP)** — `score_outfit`, `find_matching_colors`, `get_season`, `get_routine`, `check_ingredient_conflict`, `search_knowledge`, `compare_colors` as read-only MCP tools.
+- **Beauty Passport & Share-to-Analyze** — profile as portable JSON you own; share any image into the app and the on-device analyzer runs on it. Nothing is uploaded, ever.
+- Also: global search, three-step onboarding, favorites, shareable cards, glow streak, storage persistence, dark mode, deep-linkable hash routes.
 
-Everything a contributor needs is preserved in [`docs/`](docs/):
+## Docs
 
-| Document | What it holds |
+| | |
 | --- | --- |
-| [README-EXTENDED.md](docs/README-EXTENDED.md) | The deep version of this README — full feature detail, verification commands, project structure |
-| [CONTEXT.md](docs/CONTEXT.md) | Start here for code — codebase map, design-token rules, hydration guardrails, engine reference |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Complete deployment guide with agent brief, env contract, and post-deploy checklist |
-| [RESEARCH-PAPERS.md](docs/RESEARCH-PAPERS.md) | Every paper the engines are grounded in |
+| [README-EXTENDED.md](docs/README-EXTENDED.md) | Full feature detail, verification suites, project structure |
+| [CONTEXT.md](docs/CONTEXT.md) | Start here for code — codebase map, design tokens, hydration guardrails |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Complete deploy guide — agent brief, env contract, checklist, rollback |
+| [RESEARCH-PAPERS.md](docs/RESEARCH-PAPERS.md) | The paper lineage behind every engine |
 | [RESEARCH-UNIQUE-PROBLEM.md](docs/RESEARCH-UNIQUE-PROBLEM.md) | The Mirror Test product thesis |
-| [RESEARCH-COMPLIANCE.md](docs/RESEARCH-COMPLIANCE.md) | Regulatory and claims safety — GDPR, EU AI Act, MoCRA, FTC |
+| [RESEARCH-COMPLIANCE.md](docs/RESEARCH-COMPLIANCE.md) | GDPR, EU AI Act, MoCRA, FTC claims safety |
 | [RESEARCH-GROWTH.md](docs/RESEARCH-GROWTH.md) | Distribution and monetization strategy |
-| [RESEARCH-CYCLE-SCIENCE.md](docs/RESEARCH-CYCLE-SCIENCE.md) | Temporal/context skin science with honest strength verdicts |
-| [RESEARCH-DEEPTECH.md](docs/RESEARCH-DEEPTECH.md) | WebMCP deep-dive, free-LLM provider matrix, deep-tech roadmap |
-| [RESEARCH-NEXT-TECH.md](docs/RESEARCH-NEXT-TECH.md) | The next layer — AR mirror, on-device stylist, WebGPU color lab |
+| [RESEARCH-CYCLE-SCIENCE.md](docs/RESEARCH-CYCLE-SCIENCE.md) | Temporal/context skin science, honest verdicts |
+| [RESEARCH-DEEPTECH.md](docs/RESEARCH-DEEPTECH.md) | WebMCP deep-dive, provider matrix, roadmap |
+| [RESEARCH-NEXT-TECH.md](docs/RESEARCH-NEXT-TECH.md) | The next layer — AR mirror, on-device stylist, WebGPU |
 | [RESEARCH-PWA-LAUNCH.md](docs/RESEARCH-PWA-LAUNCH.md) | PWA launch checklist and benchmarks |
-| [RESEARCH-BEAUTY-APP-UX.md](docs/RESEARCH-BEAUTY-APP-UX.md) | Competitor benchmark and feature-gap analysis |
+| [RESEARCH-BEAUTY-APP-UX.md](docs/RESEARCH-BEAUTY-APP-UX.md) | Competitor benchmark and feature gaps |
 | [DESIGN_BRIEF.md](docs/DESIGN_BRIEF.md) | Design language and motion rules |
-
-Also kept: [`worklog.md`](worklog.md) — the append-only build log of every task and verification run.
+| [worklog.md](worklog.md) | Append-only build log |
 
 ## Contributing
 
@@ -125,7 +110,7 @@ Also kept: [`worklog.md`](worklog.md) — the append-only build log of every tas
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-Read [`docs/CONTEXT.md`](docs/CONTEXT.md) first — it documents the design-token rules, hydration guardrails, and engine conventions this codebase runs on.
+Read [docs/CONTEXT.md](docs/CONTEXT.md) first — design-token rules, hydration guardrails, engine conventions.
 
 ## License
 
