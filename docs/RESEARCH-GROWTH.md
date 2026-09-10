@@ -1,5 +1,8 @@
 # RESEARCH-GROWTH — Distribution, Growth Loops & Monetization for Aurelia (2025–2026)
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia (beauty/style PWA, Next.js 16 App Router, TS, on-device-first) · **Compiled:** 2026-09-09
 **Methodology:** 14 live web searches (z-ai web_search); snippet-level evidence, marked ⚠️ where unverified or conflicting. Companion docs: [`RESEARCH-PWA-LAUNCH.md`](./RESEARCH-PWA-LAUNCH.md) (launch checklist — this doc is the *strategy* layer above it), [`RESEARCH-COMPLIANCE.md`](./RESEARCH-COMPLIANCE.md) (FTC affiliate disclosure, privacy policy, claims rules — the legal counterpart to monetization).
 **Scope:** research + this document only. No app code was changed.

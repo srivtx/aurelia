@@ -1,5 +1,8 @@
 # Research: Feature & UX Benchmark for Consumer Beauty/Style Tips Apps (2025–2026)
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Task ID:** R-2 · **Type:** Research only (no code changes)
 **Goal:** Identify what makes free beauty/style content apps win ratings + retention, and what Aurelia must add to feel complete and loved.
 **Method:** 21 live web searches via `z-ai` CLI (`web_search`) covering app-store listings, product reviews, UX pattern articles, and beauty content sites; findings cross-checked against Aurelia's current code (`src/data/*`, `src/components/aurelia/*`, knowledge bases). Search snippets are the primary external evidence; interpretation and best-practice synthesis are labeled where they come from internal expertise.

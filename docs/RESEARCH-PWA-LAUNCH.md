@@ -1,5 +1,8 @@
 # RESEARCH — PWA Launch Readiness for Aurelia (2025–2026)
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Task ID:** R-1 · **Agent:** research (PWA launch readiness) · **Type:** research-only
 **Method:** 18 live web searches (z-ai web_search) against web.dev / MDN / Chrome developer docs / Apple docs / W3C / industry benchmark sites, cross-checked with deep internal knowledge of the PWA platform (both labeled). Current Aurelia code was inspected to ground every checklist item (`manifest.json`, `sw.js`, `layout.tsx`, `page.tsx`, `store.ts`, `globals.css`, `next.config.ts`).
 **Legend:** ✅ already done in Aurelia · ⚠️ partial/risky · ❌ missing. Priorities: **P0** = must fix before launch, **P1** = should have at launch or within 2 weeks, **P2** = competitive polish / post-launch roadmap.

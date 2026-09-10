@@ -17,6 +17,23 @@
 
 ---
 
+#### Contents
+
+- [1.1 NORMAL SKIN](#11-normal-skin)
+- [1.2 OILY SKIN](#12-oily-skin)
+- [1.3 DRY SKIN](#13-dry-skin)
+- [1.4 COMBINATION SKIN](#14-combination-skin)
+- [1.5 SENSITIVE SKIN](#15-sensitive-skin)
+- [Scoring & result logic (implementation spec)](#scoring-result-logic-implementation-spec)
+- [What each step actually does](#what-each-step-actually-does)
+- [The universal minimal routine (total beginners — start HERE)](#the-universal-minimal-routine-total-beginners--start-here)
+- [Order rule: thinnest → thickest](#order-rule-thinnest-thickest)
+- [AM vs PM — what changes?](#am-vs-pm-what-changes)
+- [Hyaluronic Acid (HA)](#hyaluronic-acid-ha)
+- [Niacinamide (Vitamin B3)](#niacinamide-vitamin-b3)
+- [Vitamin C (L-ascorbic acid & derivatives)](#vitamin-c-l-ascorbic-acid-derivatives)
+- [Retinol (and the retinoid family)](#retinol-and-the-retinoid-family)
+
 ## 1.1 NORMAL SKIN
 
 **Snapshot:** balanced skin — not too oily, not too dry. Lucky, but still needs protection. (Note: "normal" just means "balanced" — every skin type is normal skin to have.)

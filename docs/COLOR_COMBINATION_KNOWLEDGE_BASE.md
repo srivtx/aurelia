@@ -11,6 +11,16 @@
 
 ---
 
+#### Contents
+
+- [SECTION 1: The Color Matching Engine — 19 Core Wardrobe Colors](section-1-the-color-matching-engine--19-core-wardrobe-colors)
+- [SECTION 2: 15 Curated Outfit Palettes](section-2-15-curated-outfit-palettes)
+- [SECTION 3: Color Theory Crash Course (beginner-friendly)](section-3-color-theory-crash-course-beginner-friendly)
+- [SECTION 4: Rules of Thumb — 10 memorable laws](section-4-rules-of-thumb--10-memorable-laws)
+- [SECTION 5: Skin Undertone Guide — find your flattering families](section-5-skin-undertone-guide--find-your-flattering-families)
+- [Appendix A: Extended Hex Glossary](appendix-a-extended-hex-glossary)
+- [Appendix B: Implementation notes (for the dev team)](appendix-b-implementation-notes-for-the-dev-team)
+
 ## SECTION 1: The Color Matching Engine — 19 Core Wardrobe Colors
 
 ### Master lookup table

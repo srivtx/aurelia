@@ -1,5 +1,8 @@
 # RESEARCH-COMPLIANCE — Regulatory, Privacy & Claims-Language Safety for Aurelia
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia (beauty/style PWA, Next.js 16 App Router, TS, on-device-first) · **Compiled:** 2026-09-09
 **Methodology:** 16 live web searches (z-ai web_search); snippet-level evidence, marked ⚠️ where not fully verified. Primary-source anchors: EDPB, EUR-Lex, EU Commission, FDA, FTC, MDCG, CNIL/ICO commentary, law-firm client memos (Gibson Dunn, DLA Piper, Orrick, Foley, Finnegan, Mishcon, Stibbe). Two secondary verifications could not be run (tool outage) — flagged inline. Companion docs: [`RESEARCH-PAPERS.md`](./RESEARCH-PAPERS.md) (measurement science), [`RESEARCH-GROWTH.md`](./RESEARCH-GROWTH.md) (distribution/monetization, incl. FTC affiliate disclosure).
 **Scope:** research + this document only. No app code was changed.

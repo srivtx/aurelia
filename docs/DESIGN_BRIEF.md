@@ -1,4 +1,7 @@
 # Design Brief — "Aurelia" (working name)
+
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
 ## Mobile-first PWA · Fashion & Beauty Tips for Gen-Z Women (16–25)
 **Domains:** color combinations · makeup basics · skincare basics · hairstyles
 

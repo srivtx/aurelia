@@ -1,5 +1,7 @@
 # AURELIA — Context & Contribution Guide
 
+> **Part of Aurelia** · [README](../README.md) · [Extended README](./README-EXTENDED.md) · [DEPLOYMENT](./DEPLOYMENT.md) · [worklog](../worklog.md)
+>
 > **Purpose of this file:** everything a new contributor needs to understand the
 > repo in one read — what the app is, where everything lives, the design system,
 > the deep-tech engines, the research that drove the decisions, and how to work

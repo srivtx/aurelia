@@ -1,5 +1,8 @@
 # RESEARCH-DEEPTECH — WebMCP, Free LLM Providers, Modern PWA APIs & Original Deep-Tech Ideas
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia (beauty/style PWA, Next.js 16 App Router, TS, Tailwind v4)
 **Agent:** R-3 (research, deep-tech + providers) · **Compiled:** 2026-09-08
 **Methodology:** Live web research (web search + full-page fetches of primary sources: W3C WebMCP spec, webmachinelearning/webmcp GitHub repo, Chrome/Edge developer docs, console.groq.com docs, OpenRouter docs + live `/v1/models` API, Cerebras inference docs (llms.txt), ai.google.dev docs, MDN browser-compat-data pulled from GitHub main). Items that could **not** be verified live are explicitly marked ⚠️ *internal knowledge — verify before relying*.

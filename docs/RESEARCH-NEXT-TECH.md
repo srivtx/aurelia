@@ -1,5 +1,8 @@
 # RESEARCH-NEXT-TECH — The Next Deep-Tech Layer for Aurelia
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia (beauty/style PWA, Next.js 16 App Router, TS, Tailwind v4)
 **Compiled:** 2026-09-09 · **Methodology:** live web research (11 targeted searches + primary-source fetches: developer.chrome.com Prompt API page (updated 2026-08-26), Google AI Edge MediaPipe FaceLandmarker guide, W3C CSS Color 4 (Sept 2026), webmachinelearning/WebNN materials, sqlite.org OPFS docs). Items that could not be verified live are marked ⚠️ *internal knowledge — verify before relying*.
 **Predecessor:** [`RESEARCH-DEEPTECH.md`](./RESEARCH-DEEPTECH.md) (WebMCP ✅ shipped, provider cascade ✅ shipped, share-target ✅ shipped, PWA APIs ✅). This doc covers the **next** layer only — nothing below duplicates it.

@@ -9,6 +9,18 @@
 
 ---
 
+#### Contents
+
+- [SECTION 1: Makeup Basics — The Foundation of Knowledge](section-1-makeup-basics--the-foundation-of-knowledge)
+- [SECTION 2: Face Makeup 101](section-2-face-makeup-101)
+- [SECTION 3: Eye Makeup 101](section-3-eye-makeup-101)
+- [SECTION 4: Lip Makeup 101](section-4-lip-makeup-101)
+- [SECTION 5: Five Occasion Looks](section-5-five-occasion-looks)
+- [SECTION 6: Myth-Busting — 8 Myths, Debunked](section-6-myth-busting--8-myths-debunked)
+- [SECTION 7: Tool Care & Hygiene](section-7-tool-care-hygiene)
+- [SECTION 8: Makeup Removal — Double Cleansing, Done Right](section-8-makeup-removal-double-cleansing-done-right)
+- [Appendix: Mini Glossary — speak makeup like a pro](appendix-mini-glossary--speak-makeup-like-a-pro)
+
 ## SECTION 1: Makeup Basics — The Foundation of Knowledge
 
 ### 1.1 The Golden Order: Your 12-Step Full Routine

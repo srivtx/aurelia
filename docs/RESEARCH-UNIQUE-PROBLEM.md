@@ -1,5 +1,8 @@
 # RESEARCH-UNIQUE-PROBLEM — The Problem Aurelia Should Solve That Nobody Solves
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia · **Compiled:** 2026-09-09
 **Methodology:** 16 live web searches (z-ai web_search) on problem evidence, competitor coverage, and scientific feasibility. Marketing-adjacent stats are labeled as such. Companion docs: [`RESEARCH-NEXT-TECH.md`](./RESEARCH-NEXT-TECH.md) (tech-first), this doc is **problem-first**.
 

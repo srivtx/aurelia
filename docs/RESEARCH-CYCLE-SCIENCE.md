@@ -1,5 +1,8 @@
 # RESEARCH-CYCLE-SCIENCE — Temporal & Context Skin Science for Aurelia
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia (beauty/style PWA, Next.js 16 App Router, TS, on-device-first) · **Compiled:** 2026-09-09
 **Methodology:** 11 live web searches (z-ai web_search) across PubMed/PMC/journal-indexed queries; snippet-level evidence, marked ⚠️ where unverified. Companion docs: [`RESEARCH-PAPERS.md`](./RESEARCH-PAPERS.md) (the measurement layer this extends), [`RESEARCH-COMPLIANCE.md`](./RESEARCH-COMPLIANCE.md) (claims-language rules that govern every feature proposed here — the honest-labels discipline is *load-bearing*, because several of these domains have modest effect sizes).
 **Scope:** research + this document only. No app code was changed.

@@ -1,5 +1,8 @@
 # RESEARCH-PAPERS — What AURELIA Can Build, Grounded in Actual Papers
 
+> **Part of Aurelia** · [README](../README.md) · [Docs index in README](../README.md#docs) · [Extended README](./README-EXTENDED.md) · [CONTEXT](./CONTEXT.md) · [DEPLOYMENT](./DEPLOYMENT.md)
+
+
 **Project:** Aurelia · **Compiled:** 2026-09-09 · **Methodology:** 14 live paper-hunts (z-ai web_search) across dermatology colorimetry, cosmetic chemistry CV, psychophysics of color, fashion-compatibility learning, and hair fiber science. Every feature below names its paper lineage and an on-device implementation path. Predecessors: [`RESEARCH-NEXT-TECH.md`](./RESEARCH-NEXT-TECH.md) (platform APIs), [`RESEARCH-UNIQUE-PROBLEM.md`](./RESEARCH-UNIQUE-PROBLEM.md) (problem-first market case).
 
 ---
